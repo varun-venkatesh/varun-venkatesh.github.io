@@ -1,7 +1,7 @@
 ---
 layout: post
-title: Customary First Page
-date: 2014-04-30
+title: "Customary First Page"
+date: 2020-05-11
 ---
 
 After some searching on the internet (where else?!), I was able to kludge together a site.

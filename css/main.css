@@ -22,7 +22,7 @@ a {
 a:hover {
     text-decoration: underline;
 }
-h1, h3 {
+h1 {
     font-family: 'Exo';
     font-size: 3em;
 }

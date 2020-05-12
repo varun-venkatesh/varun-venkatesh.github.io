@@ -1,5 +1,5 @@
 ---
-layout: post
+layout: posts
 title: "Customary First Page"
 date: 2020-05-11
 ---

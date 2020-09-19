@@ -30,12 +30,14 @@ I'd like to go about this in parts (or chapters, as I'll call them) starting wit
 All references to commands and code snipptes will be ```fomatted like code``` (as is common in  programmer-related literature). Larger code snippets will reside in blocks such as this:
 
 {% highlight c %}  
+
 int large_code_snippet(void)
 {
     /*larger than a single line of code*/
     char *message = "This is a large code snippet";
     return 0;
-}  
+}
+
 {% endhighlight %}
 
 And finally, a note to the eager-beavers out there, all of the source code is available [here](https://github.com/varun-venkatesh/bare-metal-arm).

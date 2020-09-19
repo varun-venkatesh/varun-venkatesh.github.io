@@ -2,7 +2,6 @@
 layout: posts
 title: "Bare-Metal programming on ARM Cortex-M. No hardware needed! - Intro"
 date: 2020-09-19
-
 ---
 
 Bare-Metal programming and no hardware needed?! How cool is that?!
@@ -30,17 +29,14 @@ I'd like to go about this in parts (or chapters, as I'll call them) starting wit
 
 All references to commands and code snipptes will be ```fomatted like code``` (as is common in  programmer-related literature). Larger code snippets will reside in blocks such as this:
 
-{% highlight c %}  
-
+```c
 int large_code_snippet(void)
 {
     /*larger than a single line of code*/
     char *message = "This is a large code snippet";
     return 0;
 }
-
-{% endhighlight %}
-
+```
 And finally, a note to the eager-beavers out there, all of the source code is available [here](https://github.com/varun-venkatesh/bare-metal-arm).
 
 See you in the [next chapter](https://varun-venkatesh.github.io/2020/09/19/bare-mtl-chapter1.html).

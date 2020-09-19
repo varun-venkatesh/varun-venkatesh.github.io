@@ -7,15 +7,11 @@ subtitle: Varun's weblog
 <div class="blurb">
 	<h1>{{ page.title }}</h1>
 	<h3>{{ page.subtitle }}</h3>
-	<p>
-	   This site is still under construction, so bear with me.
-	   While you're here, feel free to take a look at <a href="https://github.com/varun-venkatesh">my work.</a>
-	</p>
 </div><!-- /.blurb -->
 
 <ul class="posts">
 	{% for post in site.posts %}
-	<li><span>{{ post.date | date_to_string }}</span> » <a href="{{ post.url }}" title="{{ post.title }}">{{ post.title }}</a></li>
+	<li><span>{{ post.date | date_to_string }}</span> : <a href="{{ post.url }}" title="{{ post.title }}">{{ post.title }}</a></li>
 	{% endfor %}
 </ul>
 

@@ -32,9 +32,9 @@ All references to commands and code snipptes will be ```fomatted like code``` (a
 ```c
 int large_code_snippet(void)
 {
-	/*larger than a single line of code*/
-	char *message = "This is a large code snippet";
-	return 0;
+    /*larger than a single line of code*/
+    char *message = "This is a large code snippet";
+    return 0;
 }
 
 ```

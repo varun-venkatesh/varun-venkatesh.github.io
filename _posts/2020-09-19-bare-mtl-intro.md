@@ -25,7 +25,7 @@ I cheated there, well, just a wee bit. You do need a pc/laptop (preferably Linux
 **What do I have to know to start off?**
 Just your way around a Linux machine, some C and assembly programming (not much and you can always use references and search when your stuck - I did that a lot) and not much else really. 
 
-I'd like to go about this in parts starting with the setup and followed by the actual business of programming the simulated harware.
+I'd like to go about this in parts (or chapters, as I'll call them) starting with the setup and followed by the actual business of programming the simulated harware.
 
 All references to commands and code snipptes will be ```fomatted like code``` (as is common in  programmer-related literature). Larger code snippets will reside in blocks such as this:
 
@@ -41,4 +41,4 @@ int large_code_snippet(void)
 
 And finally, a note to the eager-beavers out there, all of the source code is available [here](https://github.com/varun-venkatesh/bare-metal-arm).
 
-See you in the [next part]().
+See you in the [next chapter](https://varun-venkatesh.github.io/2020/09/19/bare-mtl-chapter1.html).

@@ -2,6 +2,7 @@
 layout: posts
 title: "Bare-Metal programming on ARM Cortex-M. No hardware needed! - Intro"
 date: 2020-09-19
+
 ---
 
 Bare-Metal programming and no hardware needed?! How cool is that?!

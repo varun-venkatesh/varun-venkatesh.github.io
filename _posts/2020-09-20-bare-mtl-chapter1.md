@@ -1,7 +1,7 @@
 ---
 layout: posts
 title: "Chapter One: Upon this rock I shall build my..."
-date: 2020-09-19
+date: 2020-09-20
 ---
 
 Let's look at what we need in terms of a setup for this exercise, shalle we?

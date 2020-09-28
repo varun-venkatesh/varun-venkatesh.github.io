@@ -18,4 +18,4 @@ Yes, like you've guessed correctly, your computer, which is likely powered by x8
 **Anything else?**  
 Other than your favourtite code editor, terminal emulator and web-browser? Nothing. You're good to go.
 
-In the [next chapter](), we shall do what every programming tutorial worth it's salt starts off with... A **Hello World** program
+In the [next chapter](https://varun-venkatesh.github.io/2020/09/28/bare-mtl-chapter2.html), we shall do what every programming tutorial worth it's salt starts off with... A **Hello World** program

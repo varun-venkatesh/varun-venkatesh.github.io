@@ -5,6 +5,7 @@ date: 2020-09-28
 ---
 
 Now, that you have your setup ready, let's get coding. Remember, this is a bare-metal system - it has no software on-board and you have to do everything.
+
 We know that the hardware includes an ARM Cortex-M microcontroller, so we should be able to use ARM assembly instructions to get something done for us, say, find the sum of two numbers. That sounds like a good starting point.
 
 ```assembly

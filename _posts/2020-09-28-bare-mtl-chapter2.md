@@ -59,3 +59,19 @@ There are a couple of labels that we haven't talked about yet, ```sp``` and ```r
 
 These lables are mark the first two words - with ```sp``` tentatively set to 0x5000 representing the top of stack and the reset vector pointing to ```start``` which is where our code begins (and consequently so will the execution of our code). More on this later.
 
+Let's assemble this file and then link it to generate an executable - elf.
+
+```arm-none-eabi-as -g -mcpu=cortex-m3 -o part_1.o part_1.s```    
+-g: generates debug information    
+-mcpu: assembles code for a given cpu - in this case, cortex-m3
+
+```arm-none-eabi-ld -g -Ttext=0x0 -o part_1.elf part_1.o```    
+-Ttext: specifies the start address of the text segment. We need to keep it at 0x0 because because Cortex-M3 at startup begins by reading from address 0x0.    
+
+You'll see the linker here ```arm-none-eabi-ld``` complain:    
+**arm-none-eabi-ld: warning: cannot find entry symbol _start; defaulting to 0000000000000000**    
+because it expects a ```_start``` symbol/label from where execution begins.
+
+
+
+

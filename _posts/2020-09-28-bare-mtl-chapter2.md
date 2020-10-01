@@ -71,6 +71,7 @@ Let's assemble this file and then link it to generate an executable - elf.
 
 ```arm-none-eabi-ld -Ttext=0x0 -o part_1.elf part_1.o```    
 ```Ttext``` specifies the start address of the text segment. We need to keep it at 0x0 because because Cortex-M3 at startup begins by reading from address 0x0.    
+
 You'll see the linker here ```arm-none-eabi-ld``` complain:    
 **arm-none-eabi-ld: warning: cannot find entry symbol _start; defaulting to 0000000000000000**    
 because it expects a ```_start``` symbol/label from where execution begins.

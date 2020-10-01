@@ -6,13 +6,15 @@ date: 2020-09-28
 
 Now, that you have your setup ready, let's get coding. Remember, this is a bare-metal system - it has no software on-board and you have to do everything.
 
+### Wading through assembly code  
+
 We know that the hardware includes an ARM Cortex-M3 microcontroller, so we should be able to use ARM assembly instructions to get something done for us, say, find the sum of two numbers. That sounds like a good starting point.
 
 ```assembly
 .syntax unified
 .thumb
 
-sp:     .word 0x5000
+tos:     .word 0x5000
 reset:  .word start
 
 .text
@@ -53,21 +55,22 @@ Now, it follows that ```.thumb``` directive instructs the assembler to assemble 
 
 Now, coming to labels, you can see ```start```, ```stop```, ```num1```, ```num2``` which are used to refere to a location of the instruction within memory. They are used as sort of a readable representation of a memory address. For instance, ```start``` represents the mmeory address where the instruction ```ldr r0, num1``` is located in memory. The labels ```num1``` and ```num2``` represent the memory address where the ```.word```(s) 5 and 6 are stored. The ```.word``` directs the assembler to reserve space in memory to hold the value that follows it. Before we move on, notice how at the label ```stop```, we have ```b stop``` - which is an infinite loop so the program hangs until we turn-off/reset the microprocessor.
 
-There are a couple of labels that we haven't talked about yet, ```sp``` and ```reset```. The ARM Cortex-M3 processor, when reset reads two words from memory at:
+There are a couple of labels that we haven't talked about yet, ```tos``` and ```reset```. The ARM Cortex-M3 processor, when reset reads two words from memory at:
 1. Address 0x00000000: into the stack pointer register - r13
 2. Address 0x00000004: reset vector (which is copied into the program counter register r15) from where execution begins.
 
-These lables are mark the first two words - with ```sp``` tentatively set to 0x5000 representing the top of stack and the reset vector pointing to ```start``` which is where our code begins (and consequently so will the execution of our code). More on this later.
+These lables are mark the first two words - with ```tos``` tentatively set to 0x5000 representing the top of stack (hence tos) and the reset vector pointing to ```start``` which is where our code begins (and consequently so will the execution of our code). More on this later.
+
+### Assembly and Linking
 
 Let's assemble this file and then link it to generate an executable - elf.
 
 ```arm-none-eabi-as -g -mcpu=cortex-m3 -o part_1.o part_1.s```    
--g: generates debug information    
--mcpu: assembles code for a given cpu - in this case, cortex-m3
+```g``` generates debug information    
+```mcpu``` assembles code for a given cpu - in this case, cortex-m3
 
-```arm-none-eabi-ld -g -Ttext=0x0 -o part_1.elf part_1.o```    
--Ttext: specifies the start address of the text segment. We need to keep it at 0x0 because because Cortex-M3 at startup begins by reading from address 0x0.    
-
+```arm-none-eabi-ld -Ttext=0x0 -o part_1.elf part_1.o```    
+```Ttext``` specifies the start address of the text segment. We need to keep it at 0x0 because because Cortex-M3 at startup begins by reading from address 0x0.    
 You'll see the linker here ```arm-none-eabi-ld``` complain:    
 **arm-none-eabi-ld: warning: cannot find entry symbol _start; defaulting to 0000000000000000**    
 because it expects a ```_start``` symbol/label from where execution begins.

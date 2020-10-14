@@ -66,8 +66,8 @@ These lables are mark the first two words - with ```tos``` tentatively set to 0x
 Let's assemble this file and then link it to generate an executable - elf.
 
 ```arm-none-eabi-as -g -mcpu=cortex-m3 -o part_1.o part_1.s```    
-**-g** - generates debug information    
-**-mcpu** - assembles code for a given cpu - in this case, cortex-m3
+**-g** - generates debug information.  
+**-mcpu** - assembles code for a given cpu - in this case, cortex-m3.
 
 ```arm-none-eabi-ld -Ttext=0x0 -o part_1.elf part_1.o```    
 **-Ttext** - specifies the start address of the text segment. We need to keep it at 0x0 because because Cortex-M3 at startup begins by reading from address 0x0.    
@@ -78,15 +78,15 @@ because it expects a ```_start``` symbol/label from where execution begins. We'l
 
 The executable generated is in the ELF (executable and linkable format) - one that can be loaded and excuted in a Linux or Unix-like environment. However, we're dealing with a bare-metal system with no operating system running whatsoever. This would require us to use a raw binary dump of the elf executable which can be run on our system:
 
-```arm-none-eabi-objcopy -O binary part_1.elf part_1.bin```    
+```arm-none-eabi-objcopy -O binary part_1.elf part_1.bin```  
 **-O** - generate output of specified format - in this case, binary.
 
 If you notice the output files generated so far - part_1.o, part_1.elf, part_1.bin - the .o and .elf files span between a few hundred to a few kilobytes - owing to their elf format (headers, footers etc.) whereas the .bin file is about 28 bytes representing the actual amount of code necessary to add two numbers and save the result in a register on a cortex-M3 cpu. To run this on our bare-metal system (as simulated by qemu):
 
-```qemu5.1-system-arm -M lm3s6965evb -kernel part_1.bin -nographic -monitor telnet:127.0.0.1:1234,server,nowait```
-**-M**  - specifies the simulated machine on which to run the binary - in this case, lm3s6965 board
-**-kernel** - the "kernel" or "executable" to run - in binary format.
-**-nographic** - run as a command-line application output everthing on terminal. The serial port is also re-directed to terminal
+```qemu5.1-system-arm -M lm3s6965evb -kernel part_1.bin -nographic -monitor telnet:127.0.0.1:1234,server,nowait```  
+**-M**  - specifies the simulated machine on which to run the binary - in this case, lm3s6965 board  .
+**-kernel** - the "kernel" or "executable" to run - in binary format.  
+**-nographic** - run as a command-line application output everthing on terminal. The serial port is also re-directed to terminal.  
 **-monitor** - set-up the QEMU monitor interface to examine the simulated machine running your binary. In this case, it is set up on ```localhost```(127.0.0.1) and port 1234. ```server, nowait``` referes to QEMU setting up a telnet server but not waiting on a connection to run the executable.   
 
 In another terminal window:   
@@ -122,9 +122,9 @@ Take a look at ```R13=00005000 R15=00000012``` - we've seen earlier that ``` R13
 Earlier, we mentioned that on reset, the value at address 0x00000000 is copied onto the stack pointer ```R13``` and the value at address 0x00000004 is copied onto the program counter ```R15``` which is where execution will begin. We've seen the first statement in action. To see how execution begins at the address copied from 0x00000004, run the binary on QEMU but halt execution:
 
 ```qemu5.1-system-arm -s -S -M lm3s6965evb -kernel part_1.bin -nographic -serial /dev/null```
-**-S** - freeze (or stop) execution at startup
-**-s** - used instead of -gdb tcp::1234 or running gdbserver in the qemu prompt
-**-serial** - redirect serial output to a char device - in this case /dev/null
+**-S** - freeze (or stop) execution at startup.  
+**-s** - used instead of -gdb tcp::1234 or running gdbserver in the qemu prompt.  
+**-serial** - redirect serial output to a char device - in this case /dev/null.  
 
 open up another terminal and run:
 
@@ -155,7 +155,8 @@ sp             0x5000	0x5000
 lr             0xffffffff	-1
 pc             0x8	0x8 <start>
 xpsr           0x41000000	1090519040
-```
+```  
+
 see how execution has stopped excatly at startup represented by label ```start``` which is also the value in the program counter ```R15```. You may say, how convenient that start of execution in my example is where I begin any assembly instruction at all. Well, if you don't believe me, move ```start``` to any other address or even change the ```reset``` label to point to another address and try examining the results via the debugger!  
 
 

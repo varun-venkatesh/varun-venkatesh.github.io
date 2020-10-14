@@ -121,7 +121,7 @@ Take a look at ```R13=00005000 R15=00000012``` - we've seen earlier that ``` R13
 
 Earlier, we mentioned that on reset, the value at address 0x00000000 is copied onto the stack pointer ```R13``` and the value at address 0x00000004 is copied onto the program counter ```R15``` which is where execution will begin. We've seen the first statement in action. To see how execution begins at the address copied from 0x00000004, run the binary on QEMU but halt execution:
 
-```qemu5.1-system-arm -s -S -M lm3s6965evb -kernel part_1.bin -nographic -serial /dev/null```
+```qemu5.1-system-arm -s -S -M lm3s6965evb -kernel part_1.bin -nographic -serial /dev/null```  
 **-S** - freeze (or stop) execution at startup.  
 **-s** - used instead of -gdb tcp::1234 or running gdbserver in the qemu prompt.  
 **-serial** - redirect serial output to a char device - in this case /dev/null.  

@@ -84,7 +84,7 @@ The executable generated is in the ELF (executable and linkable format) - one th
 If you notice the output files generated so far - part_1.o, part_1.elf, part_1.bin - the .o and .elf files span between a few hundred to a few kilobytes - owing to their elf format (headers, footers etc.) whereas the .bin file is about 28 bytes representing the actual amount of code necessary to add two numbers and save the result in a register on a cortex-M3 cpu. To run this on our bare-metal system (as simulated by qemu):
 
 ```qemu5.1-system-arm -M lm3s6965evb -kernel part_1.bin -nographic -monitor telnet:127.0.0.1:1234,server,nowait```  
-**-M**  - specifies the simulated machine on which to run the binary - in this case, lm3s6965 board  .
+**-M**  - specifies the simulated machine on which to run the binary - in this case, lm3s6965 board.  
 **-kernel** - the "kernel" or "executable" to run - in binary format.  
 **-nographic** - run as a command-line application output everthing on terminal. The serial port is also re-directed to terminal.  
 **-monitor** - set-up the QEMU monitor interface to examine the simulated machine running your binary. In this case, it is set up on ```localhost```(127.0.0.1) and port 1234. ```server, nowait``` referes to QEMU setting up a telnet server but not waiting on a connection to run the executable.   

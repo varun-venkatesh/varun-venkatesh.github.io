@@ -56,10 +56,10 @@ Now, it follows that ```.thumb``` directive instructs the assembler to assemble 
 Now, coming to labels, you can see ```start```, ```stop```, ```num1```, ```num2``` which are used to refere to a location of the instruction within memory. They are used as sort of a readable representation of a memory address. For instance, ```start``` represents the mmeory address where the instruction ```ldr r0, num1``` is located in memory. The labels ```num1``` and ```num2``` represent the memory address where the ```.word```(s) 5 and 6 are stored. The ```.word``` directs the assembler to reserve space in memory to hold the value that follows it. Before we move on, notice how at the label ```stop```, we have ```b stop``` - which is an infinite loop so the program hangs until we turn-off/reset the microprocessor.
 
 There are a couple of labels that we haven't talked about yet, ```tos``` and ```reset```. The ARM Cortex-M3 processor, when reset reads two words from memory at:
-1. Address 0x00000000: into the stack pointer register - r13
-2. Address 0x00000004: reset vector (which is copied into the program counter register r15) from where execution begins.
+1. Address ```0x00000000```: into the stack pointer register - r13
+2. Address ```0x00000004```: reset vector (which is copied into the program counter register r15) from where execution begins.
 
-These lables are mark the first two words - with ```tos``` tentatively set to 0x5000 representing the top of stack (hence tos) and the reset vector pointing to ```start``` which is where our code begins (and consequently so will the execution of our code). This constitutes what we call the **interrupt vector table** or **vector table**. More on this later.
+These lables are mark the first two words - with ```tos``` tentatively set to ```0x5000``` representing the top of stack (hence tos) and the reset vector pointing to ```start``` which is where our code begins (and consequently so will the execution of our code). This constitutes what we call the **interrupt vector table** or **vector table**. More on this later.
 
 ### Assembly and Linking
 
@@ -117,9 +117,9 @@ FPSCR: 00000000
 ```   
 
 Notice how ```R00=00000005 R01=00000006``` have our inputs and the result is stored in ```R02=0000000b``` (0x0b == 11) - our program works!  
-Take a look at ```R13=00005000 R15=00000012``` - we've seen earlier that ``` R13``` represents the stack pointer and ```R15```, the program counter. The value stored in stack pointer is the value at address 0x00000000 labelled ```tos```. The program counter points to the label ```stop``` as we have set up a loop forever by branching to ```stop```.  
+Take a look at ```R13=00005000 R15=00000012``` - we've seen earlier that ``` R13``` represents the stack pointer and ```R15```, the program counter. The value stored in stack pointer is the value at address ```0x00000000``` labelled ```tos```. The program counter points to the label ```stop``` as we have set up a loop forever by branching to ```stop```.  
 
-Earlier, we mentioned that on reset, the value at address 0x00000000 is copied onto the stack pointer ```R13``` and the value at address 0x00000004 is copied onto the program counter ```R15``` which is where execution will begin. We've seen the first statement in action. To see how execution begins at the address copied from 0x00000004, run the binary on QEMU but halt execution:
+Earlier, we mentioned that on reset, the value at address ```0x00000000``` is copied onto the stack pointer ```R13``` and the value at address ```0x00000004``` is copied onto the program counter ```R15``` which is where execution will begin. We've seen the first statement in action. To see how execution begins at the address copied from ```0x00000004```, run the binary on QEMU but halt execution:
 
 ```qemu5.1-system-arm -s -S -M lm3s6965evb -kernel part_1.bin -nographic -serial /dev/null```  
 **-S** - freeze (or stop) execution at startup.  
@@ -173,10 +173,17 @@ In order to execute a program written in C, our system needs to have the followi
 3. manage storing/retrieving arguments to functions as well as the return address of the function. - **stack**
 4. clear the memory region to hold uninitialized variables with global scope. **bss segment**
 
-You remember these "segments" being referenced in your last interview don't you? Arranged like this:
+You remember these "segments" being referenced in your last interview don't you? Arranged like this?  
 
-![program memory layout]({{ site.baseurl }}/images/program_memory_layout.png "program memory layout")
+![program memory layout]({{ site.baseurl }}/images/program_mem_layout.png "program memory layout")  
 
+This figure above raises the question - where in the memory do these segments reside and how do we instruct the hardware to manage these? For this, we'll need a copy of the data sheet for the hardware of choice, LM3S6965 ([here](https://www.ti.com/lit/ds/symlink/lm3s6965.pdf?ts=1602791587961&ref_url=https%253A%252F%252Fwww.google.com%252F)) and a linker script.  
+
+If we look at the memory map in Table 2-4, addresses in the range ```0x00000000 to 0x0003FFFF``` (256kB) represent the on-chip flash (non-volatile memory) and ```0x20000000 to 0x2000FFFF``` of on-chip SRAM (volatile memory). Since code doesn't have to change at runtime, the ```text``` segment can continue residing in the on-chip flash i.e. the code doesn't have to be relocated to any other memory region (although we could if we wanted to).  
+
+The ```data``` and ```bss``` segments however, will have to be relocated to the volatile memory - these hold variables with global scope which will be modified routinely. The volatile memory region will also hold the stack - which is where local variables, arguments and return addresses will be present and modified. It is fairly easy to configure where the stack - the address held at memory location ```0x00000000``` initializes the stack pointer - in the ARM Cortex-M3. The stack as defined by the ARM Architecture Procedure Call Standard [AAPCS](https://developer.arm.com/documentation/ihi0042/j/?lang=en) requires the stack to be _full-descending_, i.e. the stack "grows" downwards in memory. Let's then set the initial value of the stack pointer to the highest address in the volatile memory space ```0x2000FFFF```. You may be wondering what if the stack continues to grow and overwrite the ```data``` and ```bss``` segments that are also in the volatile memory space? Yes, it is possible and there are ways to detect this. We'll discuss that later.  
+
+Now that we know where each section of the program will reside, we'll need a way to ensure that this is set up before we can run any C program (executable) on our system. How do we get these various sections to be placed where we want them? That's where the linker script comes in. Recall how we linked our object file to get an executable ```.elf``` file, where we specified the start address of the text segment. The linker, ```arm-none-eabi-ld``` can also accept a linker script written in a specialized scripting language specific to the ld application. This script can be used to specify memory regions corresponding to various segments in accordance with the memory map - which the linker understands and complies with.
 
 
 

@@ -65,11 +65,11 @@ These lables are mark the first two words - with ```tos``` tentatively set to ``
 
 Let's assemble this file and then link it to generate an executable - elf.
 
-```arm-none-eabi-as -g -mcpu=cortex-m3 -o part_1.o part_1.s```    
+```arm-none-eabi-as -g -mcpu=cortex-m3 -o hello.o hello.s```    
 **-g** - generates debug information.  
 **-mcpu** - assembles code for a given cpu - in this case, cortex-m3.
 
-```arm-none-eabi-ld -Ttext=0x0 -o part_1.elf part_1.o```    
+```arm-none-eabi-ld -Ttext=0x0 -o hello.elf hello.o```    
 **-Ttext** - specifies the start address of the text segment. We need to keep it at 0x0 because because Cortex-M3 at startup begins by reading from address 0x0.    
 
 You'll see the linker here ```arm-none-eabi-ld``` complain:    
@@ -78,12 +78,12 @@ because it expects a ```_start``` symbol/label from where execution begins. We'l
 
 The executable generated is in the ELF (executable and linkable format) - one that can be loaded and excuted in a Linux or Unix-like environment. However, we're dealing with a bare-metal system with no operating system running whatsoever. This would require us to use a raw binary dump of the elf executable which can be run on our system:
 
-```arm-none-eabi-objcopy -O binary part_1.elf part_1.bin```  
+```arm-none-eabi-objcopy -O binary hello.elf hello.bin```  
 **-O** - generate output of specified format - in this case, binary.
 
 If you notice the output files generated so far - part_1.o, part_1.elf, part_1.bin - the .o and .elf files span between a few hundred to a few kilobytes - owing to their elf format (headers, footers etc.) whereas the .bin file is about 28 bytes representing the actual amount of code necessary to add two numbers and save the result in a register on a cortex-M3 cpu. To run this on our bare-metal system (as simulated by qemu):
 
-```qemu5.1-system-arm -M lm3s6965evb -kernel part_1.bin -nographic -monitor telnet:127.0.0.1:1234,server,nowait```  
+```qemu5.1-system-arm -M lm3s6965evb -kernel hello.bin -nographic -monitor telnet:127.0.0.1:1234,server,nowait```  
 **-M**  - specifies the simulated machine on which to run the binary - in this case, lm3s6965 board.  
 **-kernel** - the "kernel" or "executable" to run - in binary format.  
 **-nographic** - run as a command-line application output everthing on terminal. The serial port is also re-directed to terminal.  
@@ -121,21 +121,21 @@ Take a look at ```R13=00005000 R15=00000012``` - we've seen earlier that ``` R13
 
 Earlier, we mentioned that on reset, the value at address ```0x00000000``` is copied onto the stack pointer ```R13``` and the value at address ```0x00000004``` is copied onto the program counter ```R15``` which is where execution will begin. We've seen the first statement in action. To see how execution begins at the address copied from ```0x00000004```, run the binary on QEMU but halt execution:
 
-```qemu5.1-system-arm -s -S -M lm3s6965evb -kernel part_1.bin -nographic -serial /dev/null```  
+```qemu5.1-system-arm -s -S -M lm3s6965evb -kernel hello.bin -nographic -serial /dev/null```  
 **-S** - freeze (or stop) execution at startup.  
 **-s** - used instead of -gdb tcp::1234 or running gdbserver in the qemu prompt.  
 **-serial** - redirect serial output to a char device - in this case /dev/null.  
 
 open up another terminal and run:
 
-```arm-none-eabi-gdb part_1.elf```  
+```arm-none-eabi-gdb hello.elf```  
 
 connect to the gdbserver on ```localhost:1234```  
 
 ```
 (gdb)target remote localhost:1234
 Remote debugging using localhost:1234
-start () at part_1.s:10
+start () at hello.s:10
 10	        ldr r0, num1
 (gdb) info registers
 r0             0x0	0

@@ -14,21 +14,23 @@ We know that the hardware includes an ARM Cortex-M3 microcontroller, so we shoul
 .syntax unified
 .thumb
 
-tos:     .word 0x5000
-reset:  .word start
+tos:    .word 0x5000    /* initial value of stack pointer r13 */
+reset:  .word start     /* initial value of program counter r15. STart of execution */
 
 .text
 .thumb_func
 start:
-        ldr r0, num1
-        ldr r1, num2
-        add r2, r1, r0
+        ldr r0, =num1   /* r0 == &num1 */
+        ldr r1, [r0]    /* r1 == num2 */
+        ldr r0, =num2   /* r0 == &num2 */
+        ldr r2, [r0]    /* r2 == num2 */
+        add r3, r2, r1  /* r3 == r1 + r2 */
 
 stop:
         b stop
 
-num1:   .word 5
-num2:   .word 6
+num1:   .word 5         /* first number */
+num2:   .word 6         /* second number */
 ```
 
 Let's save this file as ```hello.s``` as we'll build upon this file as we journey towards a Hello, World program.
@@ -37,9 +39,11 @@ You can see how we use the load instruction to load numbers into the cpu registe
 
 
 ```assembly
-  ldr r0, num1
-  ldr r1, num2
-  add r2, r1, r0
+ldr r0, =num1   /* r0 == &num1 */
+ldr r1, [r0]    /* r1 == num1 */
+ldr r0, =num2   /* r0 == &num2 */
+ldr r2, [r0]    /* r2 == num2 */
+add r3, r2, r1  /* r3 == r1 + r2 */
 ```
 
 There are a few other things in our assembly code that need a bit of context. 
@@ -53,7 +57,29 @@ Now, it follows that ```.thumb``` directive instructs the assembler to assemble 
 ```.text``` marks the beginning of the code/text section, which is where, as you know, resides the code and constants (within the executable). ```.thumb_func``` directive informs the assembler that the function that follows is to be assembled as thumb - I know this sounds superfluous given we've used ```.thumb``` to say the same about all of the code in the file. However, I have seen assemblers generate ARM instructions if this is not explicitly included at the head of every function label within an assembly file.
 
 
-Now, coming to labels, you can see ```start```, ```stop```, ```num1```, ```num2``` which are used to refere to a location of the instruction within memory. They are used as sort of a readable representation of a memory address. For instance, ```start``` represents the mmeory address where the instruction ```ldr r0, num1``` is located in memory. The labels ```num1``` and ```num2``` represent the memory address where the ```.word```(s) 5 and 6 are stored. The ```.word``` directs the assembler to reserve space in memory to hold the value that follows it. Before we move on, notice how at the label ```stop```, we have ```b stop``` - which is an infinite loop so the program hangs until we turn-off/reset the microprocessor.
+Now, coming to labels, you can see ```start```, ```stop```, ```num1```, ```num2``` which are used to refer to a location of the instruction within memory. They are used as sort of a readable representation of a memory address. For instance, ```start``` represents the memory address where the instruction ```ldr r0, =num1``` is located in memory. The labels ```num1``` and ```num2``` represent the memory address where the ```.word```(s) 5 and 6 are stored. The ```.word``` directs the assembler to reserve space in memory to hold the value that follows it. Before we move on, notice how at the label ```stop```, we have ```b stop``` - which is an infinite loop so the program hangs until we turn-off/reset the microprocessor. To find the addresses associalted with the labels littered around in the file, use:
+
+```
+arm-none-eabi-nm part_1.elf
+00010028 T __bss_end__
+00010028 T _bss_end__
+00010028 T __bss_start
+00010028 T __bss_start__
+00010028 T __data_start
+00010028 T _edata
+00010028 T _end
+00010028 T __end__
+00000018 t num1
+0000001c t num2
+00000004 t reset
+00080000 N _stack
+00000008 t start
+00000016 t stop
+00000020 t sum
+00000000 t tos
+```
+
+One more thing, ```@``` is used to comment a line following it, like ```//``` is used for the same purpose in C/C++.
 
 There are a couple of labels that we haven't talked about yet, ```tos``` and ```reset```. The ARM Cortex-M3 processor, when reset reads two words from memory at:
 1. Address ```0x00000000```: into the stack pointer register - r13
@@ -83,11 +109,11 @@ The executable generated is in the ELF (executable and linkable format) - one th
 
 If you notice the output files generated so far - part_1.o, part_1.elf, part_1.bin - the .o and .elf files span between a few hundred to a few kilobytes - owing to their elf format (headers, footers etc.) whereas the .bin file is about 28 bytes representing the actual amount of code necessary to add two numbers and save the result in a register on a cortex-M3 cpu. To run this on our bare-metal system (as simulated by qemu):
 
-```qemu5.1-system-arm -M lm3s6965evb -kernel hello.bin -nographic -monitor telnet:127.0.0.1:1234,server,nowait```  
+```qemu5.1-system-arm -M lm3s6965evb -kernel hello.bin -nographic -monitor telnet:127.0.0.1:7777,server,nowait```  
 **-M**  - specifies the simulated machine on which to run the binary - in this case, lm3s6965 board.  
 **-kernel** - the "kernel" or "executable" to run - in binary format.  
 **-nographic** - run as a command-line application output everthing on terminal. The serial port is also re-directed to terminal.  
-**-monitor** - set-up the QEMU monitor interface to examine the simulated machine running your binary. In this case, it is set up on ```localhost```(127.0.0.1) and port 1234. ```server, nowait``` referes to QEMU setting up a telnet server but not waiting on a connection to run the executable.   
+**-monitor** - set-up the QEMU monitor interface to examine the simulated machine running your binary. In this case, it is set up on ```localhost```(127.0.0.1) and port 7777. ```server, nowait``` referes to QEMU setting up a telnet server but not waiting on a connection to run the executable.   
 
 In another terminal window:   
 
@@ -108,15 +134,15 @@ Now, to see if our program has run successfully, try examining the registers on 
 
 ```
 (qemu) info registers
-R00=00000005 R01=00000006 R02=0000000b R03=00000000
-R04=00000000 R05=00000000 R06=00000000 R07=00000000
+R00=0001002c R01=00000005 R02=00000006 R03=0000000b
+R04=00010030 R05=00000000 R06=00000000 R07=00000000
 R08=00000000 R09=00000000 R10=00000000 R11=00000000
-R12=00000000 R13=00005000 R14=ffffffff R15=00000012
+R12=00000000 R13=00005000 R14=ffffffff R15=00000018
 XPSR=41000000 -Z-- T priv-thread
 FPSCR: 00000000
 ```   
 
-Notice how ```R00=00000005 R01=00000006``` have our inputs and the result is stored in ```R02=0000000b``` (0x0b == 11) - our program works!  
+Notice how ```R01=00000005 R02=00000006``` have our inputs and the result is stored in ```R03=0000000b``` (0x0b == 11) - our program works!  
 Take a look at ```R13=00005000 R15=00000012``` - we've seen earlier that ``` R13``` represents the stack pointer and ```R15```, the program counter. The value stored in stack pointer is the value at address ```0x00000000``` labelled ```tos```. The program counter points to the label ```stop``` as we have set up a loop forever by branching to ```stop```.  
 
 Earlier, we mentioned that on reset, the value at address ```0x00000000``` is copied onto the stack pointer ```R13``` and the value at address ```0x00000004``` is copied onto the program counter ```R15``` which is where execution will begin. We've seen the first statement in action. To see how execution begins at the address copied from ```0x00000004```, run the binary on QEMU but halt execution:
@@ -183,7 +209,174 @@ If we look at the memory map in Table 2-4, addresses in the range ```0x00000000 
 
 The ```data``` and ```bss``` segments however, will have to be relocated to the volatile memory - these hold variables with global scope which will be modified routinely. The volatile memory region will also hold the stack - which is where local variables, arguments and return addresses will be present and modified. It is fairly easy to configure where the stack - the address held at memory location ```0x00000000``` initializes the stack pointer - in the ARM Cortex-M3. The stack as defined by the ARM Architecture Procedure Call Standard [AAPCS](https://developer.arm.com/documentation/ihi0042/j/?lang=en) is _full-descending_, i.e. the it "grows" downwards in memory. Let's then set the initial value of the stack pointer to the highest address in the volatile memory space ```0x2000FFFF```. You may be wondering what if the stack continues to grow and overwrite the ```data``` and ```bss``` segments that are also in the volatile memory space? Yes, it is possible and there are ways to detect this. We'll discuss that later.  
 
-Now that we know where each section of the program will reside, we'll need a way to ensure that this is set up before we can run any C program (executable) on our system. How do we get these various sections to be placed where we want them? That's where the linker script comes in. Recall how we linked our object file to get an executable ```.elf``` file, where we specified the start address of the text segment. The linker, ```arm-none-eabi-ld``` can also accept a linker script written in a specialized scripting language specific to the ld application. This script can be used to specify memory regions corresponding to various segments in accordance with the memory map - which the linker understands and complies with.
+Now that we know where each section of the program will reside, we'll need a way to ensure that this is set up before we can run any C program (executable) on our system. How do we get these various sections to be placed where we want them? That's where the linker script comes in. Recall how we linked our object file to get an executable ```.elf``` file, where we specified the start address of the text segment. The linker, ```arm-none-eabi-ld``` can also accept a linker script written in a specialized scripting language specific to the ld application. This script can be used to specify memory regions corresponding to various segments in accordance with the memory map - which the linker understands and complies with.  
+
+Let's change ```hello.s``` a bit and save the result of the sum of two numbers in memory. We'll need a global variable to hold this result and the space for this can be reserved using the ```.space``` assembler directive.  
+
+```assembly
+.syntax unified
+.thumb
+
+tos:    .word  0x5000   /* initial value of stack pointer r13 */
+reset:  .word  start    /* initial value of program counter r15. Start of execution */
+
+.text
+.thumb_func
+start:
+        ldr r0, =num1   /* r0 == &num1 */
+        ldr r1, [r0]    /* r1 == num1 */
+        ldr r0, =num2   /* r0 == &num2 */
+        ldr r2, [r0]    /* r2 == num2 */
+        add r3, r2, r1  /* r3 == r1 + r2 */
+        ldr r4, =sum    /* r4 == &sum */
+        str r3, [r4]    /* sum == r3 */
+
+stop:
+        b stop
+
+.data
+num1:   .word 5         /* first number */
+num2:   .word 6         /* second number */
+sum:    .space 4        /* 4-byte space in memory for the result */
+```  
+
+Notice how ```sum``` is used to reserve space for a 4 byte value and how the result is is stored into ```sum```. Try building this and running the binary on qemu as shown earlier. Also, we've labelled the block with the variables ```.data```, to indicate that these belong in the data section. Although you will see the sum being held in ```r2``` the value at label ```sum``` will be zero - that is, the result was never stored here. Why is this, you ask? Because addresses in the range ```0x00000000 to 0x0003FFFF``` the on-chip flash which serves as read-only memory (although it can be written to, but not quite like writing to RAM) and ```sum``` happens to be in this address range. We want ```sum``` or any other variable of global scope to be located in the on-chip SRAM ```0x20000000 to 0x2000FFFF``` where they can be read/modified at will. How do we do this? With the linker script of course:
+
+```
+MEMORY
+{
+    FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 256K
+    SRAM  (rw) : ORIGIN = 0x20000000, LENGTH = 64K
+}
+
+SECTIONS
+{
+    . = 0x00000000;
+
+    .text : { 
+        hello.o (.text) 
+        . = ALIGN(4);
+    } > FLASH
+
+    .data : {
+        _sram_sdata = .;
+        hello.o (.data)
+        . = ALIGN(4);
+        _sram_edata = .;
+    } > SRAM AT > FLASH
+
+    _flash_sdata = LOADADDR(.data);
+
+    _sram_stacktop = ORIGIN(SRAM) + LENGTH(SRAM);
+}
+```
+
+Without going into too much detail, the linker script here, aptly named ```linker_script.ld```, sets up the various sections, thier contents and thier location within memory. ```MEMORY``` command describes the location and size of blocks of memory in the target - in accordance with teh memory map (as seen in the data sheet). ```SECTIONS``` command describes how the various sections are to be placed in memory.  
+
+We start the ```SECTIONS``` with ```. = 0x00000000;```. ```.``` represents the location counter within ```SECTIONS``` and is incremented according to what follows - although it is initialized to zero at the start of ```SECTIONS```, we've placed it there anyway. Next, ```.text``` specifies what goes into the ```.text``` section of the executable - in this case, the ```.text``` section of ```hello.o```. If we have multiple object files with sections that need to reside in the ```.text``` section of the executable, we preceed the ```(.<section_name>)``` with a ```*``` - which acts as a wildcard.  
+
+We see again ```.``` being assigned to ```ALIGN(4)```, what this does is align the location/address at that position in the linker script to the nearest 4-byte boundary. At the end of ```.text``` we see ``` > FLASH ``` which is a means of assigning a section to a previously defined region of memory - in this case ```FLASH```.
+
+Variables can be assigned to ```.``` and they hold the address of the location counter at the point where they are initialised - like ```_sram_edata```. What do we make of ```> SRAM AT > FLASH```? The ```AT``` command is used to specify the load address of a section - the address where the section is located in the executable. So, the ```.data``` will reside in the ```SRAM``` region with it's load address in ```FLASH```. ```_flash_sdata``` is initailised with ```LOADADDR(.data)```  - which returns the absolute load address of the named section - ```.data```. Since we have the memory regions supported, we can calculate the highest memory address in the on-chip SRAM, which can be used to initialize the stack pointer at the start of the program - ```_sram_stacktop```. These variables are available for us to use in our program. With this in place, here is the new ```hello.s```  
+
+```assembly
+.syntax unified
+.thumb
+
+tos:    .word  _sram_stacktop   /* initial value of stack pointer r13 */
+reset:  .word _start            /* initial value of program counter r15. Start of execution */
+
+.text
+.thumb_func
+_start:
+/* relocate data section to the SRAM */
+        ldr r0, =_flash_sdata
+        ldr r1, =_sram_sdata
+        ldr r2, =_sram_edata
+
+        cmp r2, r1
+        beq add_nums
+
+data_loop:
+        ldrb r4, [r0], #1
+        strb r4, [r1], #1
+        cmp r2, r1
+        bne data_loop
+
+add_nums:
+        ldr r0, =num1   /* r0 == &num1 */
+        ldr r1, [r0]    /* r1 == num1 */
+        ldr r0, =num2   /* r0 == &num2 */
+        ldr r2, [r0]    /* r2 == num2 */
+        add r3, r2, r1  /* r3 == r1 + r2 */
+        ldr r4, =sum    /* r4 == &sum */
+        str r3, [r4]    /* sum == r3 */
+
+stop:
+        b stop
+
+.data
+num1:   .word 5         /* first number */
+num2:   .word 6         /* second number */
+sum:    .space 4        /* 4-byte space in memory for the result */
+```  
+
+The stack pointer is initailsed to ```_sram_stacktop``` as discussed before. Another notable change is in ```_start```:
+
+```assembly
+/* relocate data section to the SRAM */
+        ldr r0, =_flash_sdata
+        ldr r1, =_sram_sdata
+        ldr r2, =_sram_edata
+
+        cmp r2, r1
+        beq add_nums
+
+data_loop:
+        ldrb r4, [r0], #1
+        strb r4, [r1], #1
+        cmp r2, r1
+        bne data_loop
+```  
+
+What we're doing here is copying the data section from the executable in the flash - beginning at ```_flash_sdata``` to the RAM beginning at ```_sram_sdata```. Following this we add the numbers and save the result in a global variable. Let's build ```hello.bin``` and along the way list the symbols in the elf executable:
+
+```
+ arm-none-eabi-nm hello.elf
+0000001e t add_nums
+00000012 t data_loop
+00000048 A _flash_sdata
+20000000 d num1
+20000004 d num2
+00000004 t reset
+2000000c D _sram_edata
+20000000 D _sram_sdata
+20010000 D _sram_stacktop
+00000008 t _start
+0000002e t stop
+20000008 d sum
+00000000 t tos
+```
+
+We see how the globals are now located in within the SRAM space ```0x00000000 to 0x20000000```. Notice how ```_sram_stacktop``` is at the highest SRAM address plus one. Now run this binary on our machine and examine the registers and memory:
+
+```
+(qemu) info registers
+R00=20000004 R01=00000005 R02=00000006 R03=0000000b
+R04=20000008 R05=00000000 R06=00000000 R07=00000000
+R08=00000000 R09=00000000 R10=00000000 R11=00000000
+R12=00000000 R13=20010000 R14=ffffffff R15=0000002e
+XPSR=61000000 -ZC- T priv-thread
+FPSCR: 00000000
+(qemu) x /16xw 0x20000000
+20000000: 0x00000005 0x00000006 0x0000000b 0x00000000
+20000010: 0x00000000 0x00000000 0x00000000 0x00000000
+20000020: 0x00000000 0x00000000 0x00000000 0x00000000
+20000030: 0x00000000 0x00000000 0x00000000 0x00000000
+```  
+The numbers and their sum are available in the SRAM beginning at ```0x20000000```. We now have almost everything we need for a C program to execute on our hardware. What we're missing is changes required to identify and relocate the ```.bss``` section for uninitialized variables, identifying the vector table or interrupt vector table for the hardware and including it into the data section and a means for displaying **Hello, World**. 
+
+
 
 
 

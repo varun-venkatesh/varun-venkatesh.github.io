@@ -79,8 +79,6 @@ arm-none-eabi-nm part_1.elf
 00000000 t tos
 ```
 
-One more thing, ```@``` is used to comment a line following it, like ```//``` is used for the same purpose in C/C++.
-
 There are a couple of labels that we haven't talked about yet, ```tos``` and ```reset```. The ARM Cortex-M3 processor, when reset reads two words from memory at:
 1. Address ```0x00000000```: into the stack pointer register - r13
 2. Address ```0x00000004```: reset vector (which is copied into the program counter register r15) from where execution begins.
@@ -374,7 +372,11 @@ FPSCR: 00000000
 20000020: 0x00000000 0x00000000 0x00000000 0x00000000
 20000030: 0x00000000 0x00000000 0x00000000 0x00000000
 ```  
-The numbers and their sum are available in the SRAM beginning at ```0x20000000```. We now have almost everything we need for a C program to execute on our hardware. What we're missing is changes required to identify and relocate the ```.bss``` section for uninitialized variables, identifying the vector table or interrupt vector table for the hardware and including it into the data section and a means for displaying **Hello, World**. 
+The numbers and their sum are available in the SRAM beginning at ```0x20000000```. We now have almost everything we need for a C program to execute on our hardware. What we're missing is changes required to identify and relocate the ```.bss``` section for uninitialized variables, identifying the vector table or interrupt vector table for the hardware and including it into the data section and a means for displaying **Hello, World**.  
+
+Let's go back ot the data sheet and look at table 2-8 which lists the exception (or interrupt types) and thier vector addresses. Vector addresses refere to addresses in the memory map where the interrupt service routines are to be located. The table suggests that vector addresses begin at ```0x00000000```  with the last vector located at address ```0x000000EC```. This means that the first ```0x000000F0``` == 240 bytes should represent calls to interrupt service routines (handlers). With this in mind, we can construct the C-runtime or startup code for the hardware that will look like this:
+
+
 
 
 

@@ -374,9 +374,182 @@ FPSCR: 00000000
 ```  
 The numbers and their sum are available in the SRAM beginning at ```0x20000000```. We now have almost everything we need for a C program to execute on our hardware. What we're missing is changes required to identify and relocate the ```.bss``` section for uninitialized variables, identifying the vector table or interrupt vector table for the hardware and including it into the data section and a means for displaying **Hello, World**.  
 
-Let's go back ot the data sheet and look at table 2-8 which lists the exception (or interrupt types) and thier vector addresses. Vector addresses refere to addresses in the memory map where the interrupt service routines are to be located. The table suggests that vector addresses begin at ```0x00000000```  with the last vector located at address ```0x000000EC```. This means that the first ```0x000000F0``` == 240 bytes should represent calls to interrupt service routines (handlers). With this in mind, we can construct the C-runtime or startup code for the hardware that will look like this:
+Let's go back ot the data sheet and look at table 2-8 which lists the exception (or interrupt types) and thier vector addresses. Vector addresses refere to addresses in the memory map where the interrupt service routines are to be located. The table suggests that vector addresses begin at ```0x00000000```  with the last vector located at address ```0x000000EC```. This means that the first ```0x000000F0``` == 240 bytes should represent calls to interrupt service routines (handlers). With this in mind, we can construct the C-runtime or startup code for the hardware that will look like this:  
 
+```assembly
+.syntax unified
+.thumb
 
+.section .vectors, "x"
+.word _sram_stacktop     /* 00: Initial Stack Pointer */
+.word _start             /* 01: Initial Program Counter (Reset) */
+.word _hang              /* 02: Non-Maskable Interrupt */
+.word _hang              /* 03: Hard Fault Interrupt */
+.word _hang              /* 04: Memory Mgmt Interrupt */
+.word _hang              /* 05: Bus Fault Interrupt */
+.word _hang              /* 06: Usage Fault Interrupt */
+.word _hang              /* 07: Reserved */
+.word _hang              /* 08: Reserved */
+.word _hang              /* 09: Reserved */
+.word _hang              /* 10: Reserved */
+.word _hang              /* 11: SVCall Interrupt */
+.word _hang              /* 12: Debug Monitor Interrupt */
+.word _hang              /* 13: Reserved */
+.word _hang              /* 14: PendSV Interrupt */
+.word _hang              /* 15: SysTick Interrupt */
+
+.text
+.thumb_func
+_start:
+/* zero all general-purpose registers */
+    mov r0, #0
+    mov r1, #0
+    mov r2, #0
+    mov r3, #0
+    mov r4, #0
+    mov r5, #0
+    mov r6, #0
+    mov r7, #0
+    mov r8, #0
+    mov r9, #0
+    mov r10, #0
+    mov r11, #0
+    mov r12, #0
+
+data_relo:
+    ldr r0, =_flash_sdata
+    ldr r1, =_sram_sdata
+    ldr r2, =_sram_edata
+
+/* handle case where data section size is zero */
+    cmp r2, r1
+    beq bss_relo
+
+data_loop:
+    ldrb r4, [r0], #1
+    strb r4, [r1], #1
+    cmp r2, r1
+    bne data_loop
+       
+bss_relo:
+    mov r0, #0 
+    ldr r1, =_sram_sbss
+    ldr r2, =_sram_ebss
+
+/* handle case where data section size is zero */
+    cmp r2, r1
+    beq finish 
+
+bss_loop:
+    strb r0, [r1], #1
+    cmp r2, r1
+    bne bss_loop
+
+finish:
+    bl main 
+        
+_hang:
+    b .
+```  
+
+The changes here from the prevoius assembly example are:
+1. We now have the first 60 bytes of the program set aside for the interrupt vectors. Although this list should be 240 bytes == 60 interrupt vectors, this should do for starters. You can go ahead and put in placeholders for the remaining 45 interrupt vectors. These are marked as a sperate section called ```.vectors```. The attribute ```x``` inidcates that it is executable - as it holds the addresses of interrupt handlers.
+2. Just like we introduced code to relocate the data section, we have code to relocate the bss section. Following this, we call our main function.  
+We save this file as ```startup.s```.
+
+With our startup code setting up the C runtime environment, we can now program in C. Let's see what a simple Hello, World program looks like.  
+
+```C
+#include <stdint.h>
+
+/* We'll be using the serial interface to print on the console (qemu)
+ * For this, we write to the UART. 
+ * Refer: http://www.ti.com/lit/ds/symlink/lm3s6965.pdf Table 2-8
+ * for the mapping of UART devices (including UART0)
+ */
+
+volatile uint8_t* lm3s6965_uart0 = (uint8_t*)0x4000C000;
+
+void serial_print(const char* msg)
+{
+    while(*msg)
+    {
+        *lm3s6965_uart0 = *msg++;
+    }
+}
+
+void main(void)
+{
+    const char *start_msg = "Hello, World";
+
+    serial_print(start_msg);
+    
+    while(1);
+}
+```  
+
+We'll be using the ```UART``` serial interface to write to teh console. If you check table 2-8 in the data sheet, you'll see that this interface is mapped to address ```0x4000C000```. Since this is QEMU and not real hardware, we can simply write to this address and have our data dispalyed on the console (although on real hardware, the UART will have to be configured suitable before it can be used. We'll be dealing with this in the next chapter).  
+
+We could've written to serial within main, but we've chosen to call a function as this would exercise stack usage (saving arguments and return address, unwinding the stack on return) - which is a good way to determine if our startup code works as expected. Let's save this file as ```serial_print.c```.  
+
+Let's also modify our linker script to account for the ```.bss``` section and the newly included ```.vectors``` section:
+
+```
+MEMORY
+{
+    FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 256K
+    SRAM  (rw) : ORIGIN = 0x20000000, LENGTH = 64K
+}
+
+SECTIONS
+{
+    . = 0x00000000;
+
+    .text : {
+        KEEP(*(.vectors))
+        * (.text) 
+        . = ALIGN(4);
+    } > FLASH
+
+    .data : {
+        _sram_sdata = .;
+        *(.data)
+        . = ALIGN(4);
+        _sram_edata = .;
+    } > SRAM AT > FLASH
+
+    _flash_sdata = LOADADDR(.data);
+
+    .bss : {
+        _sram_sbss = .;
+        *(.bss)
+        . = ALIGN(4);
+        _sram_ebss = .;
+    } > SRAM AT > FLASH
+    
+    _sram_stacktop = ORIGIN(SRAM) + LENGTH(SRAM);
+}
+```  
+
+The ```.vectors``` section is subject to the ```KEEP``` command which instructs the linker to never eliminate the section.  
+
+The manner of building the executable is the same, except the new file ```serial_print.c``` has to be compiled and assembled without linking it - using the appropriate options. Then, when linking to generate the ELF file, use the object files ```startup.o``` and ```serial_print.o``` as inputs. Let's build an elf called ```hello.elf``` and then generate a raw binary ```hello.bin``` from the same. Let's then run it on QEMU:
+
+```
+qemu5.1-system-arm -M lm3s6965evb -kernel hello.bin -nographic -monitor telnet:127.0.0.1:1234,server,nowait
+Hello, World
+```  
+
+So, there we have it. We've built a C runtime environment and used it to build/execute our first C program on a bare-metal system.  
+You can refer to the code in assembly [here](https://github.com/varun-venkatesh/bare-metal-arm/tree/master/src/chapter1/startup_asm) or the same in C (yes, all of it including the C runtime code written in C!) [here](https://github.com/varun-venkatesh/bare-metal-arm/tree/master/src/chapter1/startup_c). I've used makefiles to assist with building code and executing it - which I hope you'll find useful.  
+
+In this next chapter, we'll look at how we can program the UART/serial hardware to read/write data - as an input/output device. We'll do this in C language, of course.  
+
+### References:
+There are some really great references out there that go in depth as far as the compilation/assembly/linking/loading aspects go. 
+The one I found quite useful and elaborate is this [tutorial](http://bravegnu.org/gnu-eprog/) by Vijay Kumar particularly sections 4 to 10.
+Another great resource for assembler directives, linker scripts, make etc is [this](https://sourceware.org/binutils/). It serves well as a reference/lookup.
+Like I mentioned already, whenever a question pops in your head, look it up - seek, and ye shall find.
 
 
 

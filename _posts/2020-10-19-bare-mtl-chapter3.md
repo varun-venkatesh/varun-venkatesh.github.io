@@ -12,9 +12,7 @@ Although it is the simplest of the serial communication protocols, let's get fam
 
 UART communication involves a pair of devices sending data on one wire and recieving data on another. The communication doesn't require the use of a clock or synchronization signal, instead the devices are configured to communicate at the same baudrate (baud referes to a unit of transmission speed equal to the number of times a signal changes state per second - which translates to bits per second in the digital communication universe. The term is originally from the world of telegraphy). The data transmitted is interpreted as packets by either side of the communication - with each packet composed of a start bit, 5-9 data bits, a parity bit and 1-2 stop bits.  
 
-
-| Start bit | Data bit 1 | Data bit 2 | Data bit 3 | Data bit 4 | Data bit 5 | Data bit 6 | Data bit 7 | Parity bit 6 | Stop bit 7 |  
-| :-------: | :--------: | :--------: | :--------: | :---------:| :--------: |:---------: |:---------: |:-----------: |:---------: |  
+![uart_frame]({{ site.baseurl }}/images/uart_frame.png "uart frame")  
 
 The two UARTs in communication should use the same packet framing format (along with the same baudrate) to communicate successfully. 
 

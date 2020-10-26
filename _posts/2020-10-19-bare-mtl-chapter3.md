@@ -25,7 +25,7 @@ Controlling the UART devices is doen through what are termed special function re
 Of these, the ones that we'll be using here are:
 
 ```UARTDATA```: The register that holds data to be sent/received. Although there is are 16 FIFOs each for sending and recieving data, we'll start by using this register exclusively lfor all our communication.  
-```UARTRSR/UARTECR```: The UARTRSR/UARTECR register is the receive status register/error clear register - records any error in communication. THe registers contents can be cleared.  
+```UARTRSR/UARTECR```: The UARTRSR/UARTECR register is the receive status register/error clear register - records any error in communication. The registers contents can be cleared.  
 ```UARTFR```: This is the flag register that records the status of the UART FIFOs and indicates wheteher UART is busy.  
 ```UARTIBRD and UARTFBRD```: These registers are used to set the UART baud-rate.  
 ```UARTLCRH```: This register, called the line control register is used to control parameters such as data length, parity, and stop bit selection.  

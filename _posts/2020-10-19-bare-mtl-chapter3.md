@@ -20,4 +20,16 @@ The two UARTs in communication should use the same packet framing format (along 
 
 The hardware we're using, Stellaris LM3S6965, comes with three fully programmable 16C550-type UARTsperipherals on board. The 16C550 UART refers to an integrated circuit used for serial communication on which the said UART interfaces are modelled. These UARTS come with FIFOs for transmission/reception of data, support a baudrate of upto 3.125Mbps, support IR (infra-red) transmission/reception and so on. Section 12 in the data sheet provides details about this and more.  
 
-Controlling the UART devices is doen through what are termed special function registers that are unique to each of the UART peripherals supported. The aspects of teh UART and it's usage contorlled by these registers include - baud rate, packet format, holding data for transmission/reception, status of the UART, error status, controls etc.  
+Controlling the UART devices is doen through what are termed special function registers that are unique to each of the UART peripherals supported. The aspects of the UART and it's usage contorlled by these registers include - baud rate, packet format, holding data for transmission/reception, status of the UART, error status, controls etc.  
+
+Of these, the ones that we'll be using here are:
+
+```UARTDATA```: The register that holds data to be sent/received. Although there is are 16 FIFOs each for sending and recieving data, we'll start by using this register exclusively lfor all our communication.  
+```UARTRSR/UARTECR```: The UARTRSR/UARTECR register is the receive status register/error clear register - records any error in communication. THe registers contents can be cleared.  
+```UARTFR```: This is the flag register that records the status of the UART FIFOs and indicates wheteher UART is busy.  
+```UARTIBRD and UARTFBRD```: These registers are used to set the UART baud-rate.  
+```UARTLCRH```: This register, called the line control register is used to control parameters such as data length, parity, and stop bit selection.  
+```UARTCTL```: This is the UART control register used to enable/disable the various capabilities of the UART device.  
+
+
+

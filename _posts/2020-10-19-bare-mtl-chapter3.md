@@ -44,7 +44,43 @@ In it's most basic form, a device driver will have the following capabilities:
 3. Runtime functionality: the send and recieve functionality during UART operation as well as error detection and handling during device operation.  
 4. Termination: stop/disables/turns-off the device. This bit is usually omitted.  
 
-Now, let's start with the initialization and configuration capabilities - and translate them into functions. The data sheet has a great follow along example if you refer to section 12.4. Notice how there are references to setting bits in the SFRs referenced earlier. How do we do this programatically?  
+Now, let's start with the initialization and configuration capabilities - and translate them into functions. The data sheet has a great follow along example if you refer to section 12.4. Notice how there are references to setting bits in the SFRs referenced earlier. How do we do this programmatically?  
+
+Take a look at table 12-3 in the data sheet that gives you the offsets of the various SFRs - from the UART base address. One way of programmatically representing this is via macros with one for the base address (representing the particular UART device) and a bunch of others forholding the offsets of individual SFRs. We can then have a pair of functions to:  
+
+1. get register - returns a pointer representing an individual SFR = base address of UART + offset of desired SFR.
+2. put register - assign the desired value to program the desired SFR represented as a pointer = base address of UART + offset of desired SFR.  
+
+Another way, which I have chosen is to create a structure representing a UART device such that each member of the structure corresponds to an SFR. Notice how the SFRs offsets are strictly ascending - by choosing the right data type to represent each SFR - ```uint32_t``` since each one of them is a word length register, we can have a structure like this:  
+
+```C
+typedef struct __attribute__ ((packed)){
+    uint32_t DR;                // 0x00 UART Data Register
+    uint32_t RSRECR;            // 0x04 UART Recieve Status/Error Clear Register
+    uint32_t reserved0[4];      // 0x08-0x14 reserved
+    uint32_t FR;                // 0x18 UART Flag Register
+    uint32_t reserved1;         // 0x1C reserved
+    uint32_t ILPR;              // 0x20 UART IrDA Low-Power Register Register
+    uint32_t IBRD;              // 0x24 UART Integer Baud-Rate Divisor Register
+    uint32_t FBRD;              // 0x28 UART Fractional Baud-Rate Divisor Register
+    uint32_t LCRH;              // 0x2C UART Line Control Register
+    uint32_t CTL;               // 0x30 UART Control Register
+}uart_regs;
+```  
+
+Couple of things may have strcuk you as unusual. Firstly, the use of ```__attribute__ ((packed))```. The reason for this is to instruct the compiler that the structre that follows is packed and should not be padded. Why, you may ask? Because, the structre strictly represents the layout of the SFRs in the UART device in keeping with the offsets provided by the manufacturer. For instance, at offset ```0x0000``` from the base address lies the ```UARTDR``` and the ```UARTRSR\UARTECR``` is at offset 4. This implies that the structure member representing ```UARTRSR\UARTECR``` must follow the one representing ```UARTDR```. Whereas, ```UARTFR``` is at an offset ```0x0018``` from the base address or ```0x0018-0x0008 = 0x0010``` from where ```UARTRSR\UARTECR``` ends. We ensure that the member representing ```UARTFR```is at the right offset by introducing ```uint32_t reserved0[4]``` before defining it. Hence you see a couple of these ```reserved``` members in the structure, which is the other unusal thing you may have noticed. When you add it all up along with how structures are realised and their members are addressed, you see that this is an accurate software representation of a UART device.  
+
+Now how do I access ```UART0``` using this structure? Simply:  
+
+```
+volatile uart_regs *uart0 = (uart_regs*)0x4000C000u
+
+```  
+
+This sets the struct variable ```uart0``` at the base address of the ```UART0``` device. Since the struct is defined to reflect the SFRs accurately via the members placed at the appropriate offsets, this should help us access ```UART0``` and its SFRs.  
+why volatile? Because we want every opeartion invoving ```uart0``` to read from and write to it's seleted SFRs and not allow the compiler to optimize any opoeration away.  
+
+
 
 
 

@@ -546,9 +546,11 @@ You can refer to the code in assembly [here](https://github.com/varun-venkatesh/
 In this next chapter, we'll look at how we can program the UART/serial hardware to read/write data - as an input/output device. We'll do this in C language, of course.  
 
 ### References:
-There are some really great references out there that go in depth as far as the compilation/assembly/linking/loading aspects go. 
-The one I found quite useful and elaborate is this [tutorial](http://bravegnu.org/gnu-eprog/) by Vijay Kumar particularly sections 4 to 10.
-Another great resource for assembler directives, linker scripts, make etc is [this](https://sourceware.org/binutils/). It serves well as a reference/lookup.
+There are some really great references out there that go in depth as far as the compilation/assembly/linking/loading aspects go.  
+
+The one I found quite useful and elaborate is this [tutorial](http://bravegnu.org/gnu-eprog/) by Vijay Kumar particularly sections 4 to 10.  
+Another great resource for assembler directives, linker scripts, make etc is [this](https://sourceware.org/binutils/). It serves well as a reference/lookup.  
+
 Like I mentioned already, whenever a question pops in your head, look it up - seek, and ye shall find.
 
 

@@ -78,7 +78,9 @@ volatile uart_regs *uart0 = (uart_regs*)0x4000C000u
 ```  
 
 This sets the struct variable ```uart0``` at the base address of the ```UART0``` device. Since the struct is defined to reflect the SFRs accurately via the members placed at the appropriate offsets, this should help us access ```UART0``` and its SFRs.  
-why volatile? Because we want every opeartion invoving ```uart0``` to read from and write to it's seleted SFRs and not allow the compiler to optimize any operation away.  
+why volatile? Because we want every operation invoving ```uart0``` to read from and write to it's seleted SFRs and not allow the compiler to optimize any operation away.  
+
+
 
 
 

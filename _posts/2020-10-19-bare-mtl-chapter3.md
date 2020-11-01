@@ -170,7 +170,19 @@ static void uart_set_baudrate(uint32_t baudrate)
 }
 ```  
 
-We then set the packet format and disable FIFOs in the ```UARTLCRH``` register as follows:  
+There is one more thing that needs doing to get our UART working - the peripheral clock must be enabled by setting the UART0 (since we're using UART0 device) bits in the ```RCGC1``` register. This is a system control SFR meant specifically for clock control - a module we'll deal with in a later chapter. For now, let's simply set the ```UART0``` bit of the register, like so:  
+
+```C
+static void set_clk_uart0(void)
+{
+    uint32_t *pRCGC1 = (uint32_t*)0x400FE104u;
+
+    *pRCGC1 |= 0x00000001u;
+}
+```  
+
+
+And finally, we set the packet format and disable FIFOs in the ```UARTLCRH``` register as follows:  
 
 ```C
 static void uart_set_example_line_ctrls(void)

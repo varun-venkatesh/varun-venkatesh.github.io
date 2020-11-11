@@ -1,6 +1,6 @@
 ---
 layout: posts
-title: "Chapter Four: "
+title: "Chapter Four: We Interrupt this program to bring you a special..."
 date: 2020-10-29
 ---  
 

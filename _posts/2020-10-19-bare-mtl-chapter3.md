@@ -44,6 +44,8 @@ In it's most basic form, a device driver will have the following capabilities:
 3. Runtime functionality: the send and recieve functionality during UART operation as well as error detection and handling during device operation.  
 4. Termination: stop/disables/turns-off the device. This bit is usually omitted.  
 
+The source code, linker script and makefile for this section can be found [here](https://github.com/varun-venkatesh/bare-metal-arm/blob/master/src/chapter2/).  
+
 Now, let's start with the initialization and configuration capabilities - and translate them into functions. The data sheet has a great follow along example if you refer to section 12.4. Notice how there are references to setting bits in the SFRs referenced earlier. How do we do this programmatically?  
 
 Take a look at table 12-3 in the data sheet that gives you the offsets of the various SFRs - from the UART base address. One way of programmatically representing this is via macros with one for the base address (representing the particular UART device) and a bunch of others forholding the offsets of individual SFRs. We can then have a pair of functions to:  
@@ -249,8 +251,6 @@ This is all we need to operate the UART.
 You may have seen that we're essentially polling to see if we have received data on the UART in ```uart_rx_byte``` by checking the ```RXFE``` bit in ```UARTFR```. Although this works well as an example, it's not the most efficient way to operate a UART or any device for that matter. Polling is time/resource consuming and we'll do well to process incoming data as and when we receive it. This forms the subject of our next chapter on interrupt handling.  
 
 Now, we'll need a way to use this UART driver to communicate with the console. The simplest thing to do is write a pair of functions to write to and read from the UART device. You can try that - maybe even write code to be abel to read and write integers - who knows, even a ```printf``` and ```scanf``` implementation. If you need a starting point, take a look at this [application](https://github.com/varun-venkatesh/bare-metal-arm/blob/master/src/chapter2/serial_print.c) that utilises the UART driver.  
-
-The source code, linker script and makefile for this section can be found [here](https://github.com/varun-venkatesh/bare-metal-arm/blob/master/src/chapter2/).
 
 ### References:
 

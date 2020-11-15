@@ -1,6 +1,6 @@
 ---
 layout: posts
-title: "Chapter One: Upon this rock I shall build my..."
+title: "Chapter Zero: Upon this rock I shall build my..."
 date: 2020-09-20
 ---
 

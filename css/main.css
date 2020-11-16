@@ -1,12 +1,12 @@
 @import url('https://fonts.googleapis.com/css?family=Exo');
 
 body {
-    font-family: 'Exo';
+    font-family: 'Helvetica';
     margin: 60px auto;
     width: 70%;
 }
 nav ul, footer ul {
-    font-family: 'Exo';
+    font-family: 'Helvetica';
     padding: 0px;
     list-style: none;
     font-weight: bold;

@@ -24,7 +24,8 @@ The Run-Mode Clock Configuration (RCC) and Run-Mode Clock Configuration 2 (RCC2)
 
 We start off by mirroring the System Control Register Map using a structure like we did with ```UART``` and ```NVIC```. Programming the system control registers to configure a PLL based clock system of a ceratin frequency involves the use of the ```RCC``` register or the ```RCC2``` register if we need a larger assortment of clock configuration options. The configuration function looks like this.  
 
-```c
+```c  
+
 /* Now we come to the business end of this module - set the system clock.
  * Refer: http://www.ti.com/lit/ds/symlink/lm3s6965.pdf 
  * Section 5.3 for how to go about.
@@ -133,7 +134,7 @@ void sysctl_setclk(uint32_t cfg_rcc, uint32_t cfg_rcc2)
     //delay to ensure system divider takes effect.
     sysctl_delay(16);
                     
-}
+}  
 
 ```  
 
@@ -146,7 +147,8 @@ Next, we clear the ```XTAL``` and ```OSCSRC``` fields in our local copies and se
 
 Once we've set the clock to an appropriate frequency, we can go on to use it in our drivers that need some manner of clocking - for instance the UART. If you remember, we assumed that the default SysClk operated at 12.5 MHz. With the clock now set to a frequency of our choosing, we can replace that assumption with the actual SysClk frequency. To get this, we'll need to again look into registers ```RCC\RCC2``` (programmatically, ofcourse) and ascertain the frequency of the SysClk, like so:  
 
-```c
+```c  
+
 /* This is function is for finding the system clock frequency.
  * Helps with setting time-periods/time-outs.
  * Refer: http://www.ti.com/lit/ds/symlink/lm3s6965.pdf 
@@ -239,14 +241,16 @@ uint32_t sysctl_getclk(void)
     }
 
     return (clk_rt);
-}
+}  
+
 ```  
 
 To cut this long story short (as this can be drawn from the register description and the clock control operation), what we do is to firstly determine the clock source in use (and also whether ```RCC``` or ```RCC2``` is where the source is selected - note that for source selection and system divider values, ```RCC2``` overrides ```RCC```). If the clock source happens to be the main oscillator, the clock-source frequency can be obtained using the ```XTAL``` field. For all other sources, the clock-source frequency comes pre-determined. We then check if PLL is enabled via ```BYPASS``` use the ```PLLCFG``` register to translate the clock-source frequency obtained into the corresponding PLL frequency (See  - although PLL generates a clock signal of frequency 400 MHz, it can vary around that value depending on teh clock-source frequency (See Table 22-10). Finally, we check ```USESYSDIV``` and apply the system divider ```SYSDIV``` to the clock frequency we have so far (again, if PLL is enabled, we divide the frequency by 2 before applying ```SYSDIV```).  
 
 We can now use this method to derive our IBRD and FBRD values for the uart baudrate.  
 
-```c
+```c  
+
 /* Set the uart baudrate of the uart device*/
 static void uart_set_baudrate(uint32_t baudrate)
 {
@@ -266,13 +270,14 @@ static void uart_set_baudrate(uint32_t baudrate)
 
     uart0->IBRD = (uint16_t)(brdi & 0xffffu);
     uart0->FBRD = (uint8_t)(brdf & 0x3ffu);
-}
+}  
+
 ```  
 
 Notice how we replaced the hard-coded macro ```UART_DFLT_SYSCLK``` with the clock-frequency obtained using ```sysctl_getclk()```.  
 There's one last thing we can do with the system control register i.e. enable clocking for the ```UART0``` (or any of the peripherals that need clocking). This is done with the help of the Clock Gating Control Registers. There are 6 of these registers available to us - ``` RCGC1, SCGC1, DCGC1, RCGC2, SCGC2, DCGC2``` - each one controlling the clock gating in the various modes of operation. Since we won't be dealing with the Sleep/Deep-Sleep modes here, we'll look at ```RCGC1/RCGC2```. From thier descriptions, it appears that ```RCGC1``` controls clock gating for UARTs. Let's enable this for our ```UART0``` and use it in place of the hacky ```set_clk_uart0()``` from chapter 3.  
 
-```c
+```c  
 
 /* This function helps us enable clocking for a peripheral whose 
  * base address is passed as a parameter. This is done by appropriatley configuring
@@ -295,7 +300,7 @@ void sysctl_periph_clk_enable(uint32_t periph)
             break;
     }
 
-}
+}  
 
 ```  
 
@@ -303,17 +308,19 @@ We can then call this in ```uart_init()``` in place of ```set_clk_uart0()```.
 
 To put this in use, let's call ```sysctl_setclk(clk_cfg1, clk_cfg2)``` in our initialization function ```main()``` (we've now moved main out of ```serial_print.c``` into a new ```init.c``` function as we'll be initializing more than just the uart).  
 
-```c
-    /* Set the system clock to the PLL with the main oscillator as the source
-     * with the crystal frequency set to 8 MHz. 
-     * Divide the PLL output clock frquency by a factor of 12.
-     * Turn off the (unused) internal oscillator. This is to configure a system clock of 16.67 MHz.
-     */
-    clk_cfg1 = (SYSCTL_PLL_SYSCLK | SYSCTL_RCC_USESYSDIV | SYSCTL_RCC_SYSDIV_11 | 
-               SYSCTL_RCC_XTAL_8MHZ | SYSCTL_RCC_OSCSRC_MOSC | SYSCTL_RCC_IOSCDIS);
-    clk_cfg2 = 0;
+```c  
 
-    sysctl_setclk(clk_cfg1, clk_cfg2);
+/* Set the system clock to the PLL with the main oscillator as the source
+* with the crystal frequency set to 8 MHz. 
+* Divide the PLL output clock frquency by a factor of 12.
+* Turn off the (unused) internal oscillator. This is to configure a system clock of 16.67 MHz.
+*/
+clk_cfg1 = (SYSCTL_PLL_SYSCLK | SYSCTL_RCC_USESYSDIV | SYSCTL_RCC_SYSDIV_11 | 
+           SYSCTL_RCC_XTAL_8MHZ | SYSCTL_RCC_OSCSRC_MOSC | SYSCTL_RCC_IOSCDIS);
+clk_cfg2 = 0;
+
+sysctl_setclk(clk_cfg1, clk_cfg2);  
+    
 ```  
 
 The variables ```clk_cfg1, clk_cfg2``` represent the configuration required to operate the clock at the desired frequency.  
@@ -335,7 +342,8 @@ Let's go on an program the SysTick. We'll do this in such a way that we can prin
 
 As usual, we start off by creating a structure to hold the SFRs and initialize a member to point to the SySTick base address. We'll define functions to enable/disable SysTick and set the clock source to SysClk. We'll also write fucntions to enable/disable the SysTick interrupt.  
 
-```c
+```c  
+
 void systick_enable(void)
 {
     systick->STCTRL |= STCTRL_CLKSRC | STCTRL_ENABLE;
@@ -363,13 +371,13 @@ void systick_irq_enable(void)
 void systick_irq_disable(void)
 {
     systick->STCTRL &= ~(STCTRL_INTEN);
-}
+}  
 
 ```  
 
 Now to the fun part, let's set up ```STRELOAD``` to hold the count. The count can be any 24-bit number which is counted down on every clock pulse, but in order to be useful, it should represent some measure of time (seconds, milliseonds etc). Since we power the SysTIck with SysClk, whose frequency we know, let's find what the count value is for a given time period (number of clock pulses per time period).  
 
-```c
+```c  
 
 /* Utility function to convert the
  * the time period in milliseconds to
@@ -397,26 +405,28 @@ void systick_set_period_ms(uint32_t millisec)
      */
     uint32_t count = systick_millisec_to_timer_period(millisec);
     systick->STRELOAD = count;
-}
+}  
 
 ```  
 
 Now, onto changes in our startup and init to accomodate SysTick.  
 
-```c
-    /* Let's set systick period to be 0.5 seconds =>
-     * system clock frequency divided by 2.
-     */
-    systick_set_period_ms(500u);
+```c  
 
-    /* Let's enable the systick timer and it's interrupt */
-    systick_irq_enable();
-    systick_enable();
+/* Let's set systick period to be 0.5 seconds =>
+ * system clock frequency divided by 2.
+ */
+systick_set_period_ms(500u);
+/* Let's enable the systick timer and it's interrupt */
+systick_irq_enable();
+systick_enable();  
+
 ```
 
 We set the SysTick period to be ```500ms``` and enable the SysTick interrupt followed by the SyStick itself (with the SysClk as it's clock source). We'll then remove the association of the ```_SysTick_Handler``` to the ```Unused_Handler``` so that we can define ```_SysTick_Handler``` to do what we want. Let's define it like so, in the ```systick.c```:  
 
-```c
+```c  
+
 /* The SysTick interrupt handler - currently configured to print 
  * the number of Systick ticks elapsed at the rate of every 20 ticks
  */
@@ -428,7 +438,8 @@ void _SysTick_Handler(void)
         serial_put_uint(tick_count);
         serial_puts(" time ticks have elapsed!\n");
     }
-}
+}  
+
 ```  
 
 What we're doing here on every SysTick interrupt (which is when this is invoked) is counting 20 ticks and printing a message of the number of ticks that have elapsed. Since each tick represents the count in ```STRELOAD``` which in turn represents the number of clock pulses generated every ```500ms``` (as set in ```systick_set_period_ms(500u)```), the message must appear every ```500ms * 20 == 10s```. If you build this and run qemu as follows:  
@@ -440,5 +451,3 @@ You will see the system time prefixing each console print and be able to verify 
 ### References:  
 
 Apart from the data sheet, I found that the ARM's hardware abstarction layer implemenatation [CMSIS](https://github.com/ARM-software/CMSIS_5/tree/develop/Device/ARM/ARMCM3) was pretty useful particularly when finding out what delays were to be used to settle the oscillator and PLL.  
-
-

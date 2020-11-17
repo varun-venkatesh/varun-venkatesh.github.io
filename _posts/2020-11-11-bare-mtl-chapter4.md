@@ -301,7 +301,7 @@ void sysctl_periph_clk_enable(uint32_t periph)
 
 We can then call this in ```uart_init()``` in place of ```set_clk_uart0()```.  
 
-To put this in use, let's call ```sysctl_setclk(clk_cfg1, clk_cfg2)``` in our initialization function ```main()``` (we've now moved main out of ```serial_print.c``` into a new ```init.c``` function as we'll be initializing more than just the uart). The variable ```clk_cfg1, clk_cfg2``` represent the configuration required to operate the clock at the desired frequency.  
+To put this in use, let's call ```sysctl_setclk(clk_cfg1, clk_cfg2)``` in our initialization function ```main()``` (we've now moved main out of ```serial_print.c``` into a new ```init.c``` function as we'll be initializing more than just the uart).  
 
 ```c
     /* Set the system clock to the PLL with the main oscillator as the source
@@ -315,6 +315,9 @@ To put this in use, let's call ```sysctl_setclk(clk_cfg1, clk_cfg2)``` in our in
 
     sysctl_setclk(clk_cfg1, clk_cfg2);
 ```  
+
+The variables ```clk_cfg1, clk_cfg2``` represent the configuration required to operate the clock at the desired frequency.  
+
 
 ### ... Tick tock, tick tock...  
 

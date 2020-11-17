@@ -36,7 +36,7 @@ If you've noticed the register descriptions, the ```UARTMIS/UARTRIS``` and ```UA
 
 To this end, we'll define these registers within our ```uart_regs``` structures to reside at teh appropriate offset and perform the above tasks with a set of functions as follows:  
 
-```C  
+```c
 
 /* Enable the said uart interface to generate interrupts
  * depending on the flag set - conditions for interrupt generation.
@@ -78,7 +78,7 @@ Section 3.4 details the register descriptions of the various ```NVIC``` register
 
 To enable in interrupt, which in the context of the ```NVIC```refers to enabling it to "forward/route" said interrupt to the processor, we'll need to identify the interrupt number and set the respective bit in one of the ```EN0 or EN1``` (Interrupt Set Enable) registers. From table 2-9, we see that the interrupt number for the ```UART0 Interrupt``` is 5 (with a vector number of 21). To enable this interrupt, we set bit number 5 on ```EN0```. The simplest way of doing this is:  
 
-```C
+```c
 void interrupt_set_enable(uint8_t irq_num)
 {
 	uint32_t *pEN0 = (uint32_t*)0xE000E100;
@@ -89,7 +89,7 @@ void interrupt_set_enable(uint8_t irq_num)
 But where is the modularity/scalability/readability (aka FUN!) in that?!  
 What we'll do is create a pair of files which will hold all of the data structres, methods, definitions, macros for managing the ```NVIC``` subsystem, similar to what we did with the UART. In this, our representation of the various ```NVIC``` SFRs looks like:  
 
-```C  
+```c
 /* NVIC register map structure.
  * Refer: http://www.ti.com/lit/ds/symlink/lm3s6965.pdf Table 3-7.
  * Note: all offsets in comments are from NVIC_BASE == 0xE000E100
@@ -106,7 +106,8 @@ static volatile nvic_regs *nvic = (nvic_regs*)NVIC_BASE;
 ```  
 
 We can then define functions to enable/disable interrupts based on thier vector numbers. These vector numbers are tabulated as a set of macros in ```nvic.h``` as defined in tables 2-8 and 2-9.  
-```C
+
+```c
 /* Enables the interrupt specified via
  * param vector_num. 
  * See: http://www.ti.com/lit/ds/symlink/lm3s6965.pdf Section 3.4 (Page 109)
@@ -151,7 +152,7 @@ The final step is to define a handler for this interrupt, where we process the i
 
 We'll define this function in ```uart_drv.c``` since it involves handling a uart interrupt. Let's also provide a symbol for reference in our startup file (where lies the vector table) - to keep the linker happy. What do we do in terms of handling? For starters, let's try and print some text everytime the interrupt is triggered - which should be everytime our UART/serial device recieves data. If you recall, QEMU redirects all console inputs/outputs to the serial device - which means, anytime we type something in the QEMU console, we should have our UART recieving data and the interrupt being triggered. Our simplest interrupt handler will look like this.  
 
-```C
+```c
 void uart0_irq_handler(void)
 {
 	
@@ -187,7 +188,7 @@ telling us that the interrupt is genearted by ```UART0``` when it receives data 
 
 Now, onto our main objective - replace the polling scheme used to read data recieved by the uart with an interrupt driven scheme of doing the same. The interrupt indicates that a byte of data has been received by the uart, which means we can read the byte received on every occurence of the interrupt - represented by none other than the interrupt handler. We can have a ```char``` variable into which we read the received byte and then write it back to the console. This will give us the ability to display what we type on the console - yes, the same thing we take for granted on our computers/cellphones etc.  
 
-```C
+```c
 void uart0_irq_handler(void)
 {
     uint32_t irq_status;
@@ -217,7 +218,7 @@ All we've added is a check to see if the triggered interrupt is the UART RX inte
 
 Before we proceed, let's add  ```nvic_irq_enable(IRQ_UART0)``` in our ```main()``` function to enable the ```UART0``` interrupt. Since we're on the subject of interrupts, it is wise to keep all interrupts disabled during initialization and enable them at the end of our initialization routine - ```main()``` in this case. This disable/enable can be achieved by changing the processor state to disable/enabel all inetrrupts - using the cps instruction - [refer](https://developer.arm.com/documentation/dui0552/a/the-cortex-m3-instruction-set/miscellaneous-instructions/cps).  Let's define these in a header file and then stick them in ```main()```.  
 
-```C
+```c
 /* To enable all interrupts with programmable priority.
  * Refer: Refer http://www.ti.com/lit/ds/symlink/lm3s6965.pdf
  * Table 2-13 and Section 2-3-4

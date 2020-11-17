@@ -301,6 +301,21 @@ void sysctl_periph_clk_enable(uint32_t periph)
 
 We can then call this in ```uart_init()``` in place of ```set_clk_uart0()```.  
 
+To put this in use, let's call ```sysctl_setclk(clk_cfg1, clk_cfg2)``` in our initialization function ```main()``` (we've now moved main out of ```serial_print.c``` into a new ```init.c``` function as we'll be initializing more than just the uart). The variable ```clk_cfg1, clk_cfg2``` represent the configuration required to operate the clock at the desired frequency.  
+
+```C
+    /* Set the system clock to the PLL with the main oscillator as the source
+     * with the crystal frequency set to 8 MHz. 
+     * Divide the PLL output clock frquency by a factor of 12.
+     * Turn off the (unused) internal oscillator. This is to configure a system clock of 16.67 MHz.
+     */
+    clk_cfg1 = (SYSCTL_PLL_SYSCLK | SYSCTL_RCC_USESYSDIV | SYSCTL_RCC_SYSDIV_11 | 
+               SYSCTL_RCC_XTAL_8MHZ | SYSCTL_RCC_OSCSRC_MOSC | SYSCTL_RCC_IOSCDIS);
+    clk_cfg2 = 0;
+
+    sysctl_setclk(clk_cfg1, clk_cfg2);
+```  
+
 ### ... Tick tock, tick tock...  
 
 Other than driving peripherals that need a clocking/synchronizing signal, we need clock to measure time and say trigger actions on the expiry of a pre-determined interval. This is where timers come into play. As you may have read in the data sheet, the LM3S6965 provides among other things a System timer (SysTick) described in Section 3.1. It operates by counting down from a value (max 24-bits == 16,777,215) at the end of which vector number 15 is triggered - where we can handle the expiry of the timer to perform some useful action. Some of the uses are detailed in the section. We'll use it to build a simple scheduler in the next chapter.  
@@ -385,5 +400,42 @@ void systick_set_period_ms(uint32_t millisec)
 
 Now, onto changes in our startup and init to accomodate SysTick.  
 
+```C
+    /* Let's set systick period to be 0.5 seconds =>
+     * system clock frequency divided by 2.
+     */
+    systick_set_period_ms(500u);
+
+    /* Let's enable the systick timer and it's interrupt */
+    systick_irq_enable();
+    systick_enable();
+```
+
+We set the SysTick period to be ```500ms``` and enable the SysTick interrupt followed by the SyStick itself (with the SysClk as it's clock source). We'll then remove the association of the ```_SysTick_Handler``` to the ```Unused_Handler``` so that we can define ```_SysTick_Handler``` to do what we want. Let's define it like so, in the ```systick.c```:  
+
+```C
+/* The SysTick interrupt handler - currently configured to print 
+ * the number of Systick ticks elapsed at the rate of every 20 ticks
+ */
+void _SysTick_Handler(void)
+{
+    tick_count++;
+    if(tick_count % 20u == 0)
+    {
+        serial_put_uint(tick_count);
+        serial_puts(" time ticks have elapsed!\n");
+    }
+}
+```  
+
+What we're doing here on every SysTick interrupt (which is when this is invoked) is counting 20 ticks and printing a message of the number of ticks that have elapsed. Since each tick represents the count in ```STRELOAD``` which in turn represents the number of clock pulses generated every ```500ms``` (as set in ```systick_set_period_ms(500u)```), the message must appear every ```500ms * 20 == 10s```. If you build this and run qemu as follows:  
+
+```qemu-system-arm -M lm3s6965evb -kernel system.bin -nographic -monitor telnet:127.0.0.1:1234,server,nowait | gawk '{ print strftime("[%H:%M:%S]"), $0 }' ```
+
+You will see the system time prefixing each console print and be able to verify if indeed the SysTick messages appear every 10s - which verifies both our clock configuartion as well as SysTick.  
+
+### References:  
+
+Apart from the data sheet, I found that the ARM's hardware abstarction layer implemenatation [CMSIS](https://github.com/ARM-software/CMSIS_5/tree/develop/Device/ARM/ARMCM3) was pretty useful particularly when finding out what delays were to be used to settle the oscillator and PLL.  
 
 

@@ -55,7 +55,7 @@ Take a look at table 12-3 in the data sheet that gives you the offsets of the va
 
 Another way, which I have chosen is to create a structure representing a UART device such that each member of the structure corresponds to an SFR. Notice how the SFRs offsets are strictly ascending - by choosing the right data type to represent each SFR - ```uint32_t``` since each one of them is a word length register, we can have a structure like this:  
 
-```C
+```c
 typedef struct __attribute__ ((packed)){
     uint32_t DR;                // 0x00 UART Data Register
     uint32_t RSRECR;            // 0x04 UART Recieve Status/Error Clear Register
@@ -74,7 +74,7 @@ Couple of things may have strcuk you as unusual. Firstly, the use of ```__attrib
 
 Now how do I access ```UART0``` using this structure? Simply:  
 
-```
+```c
 volatile uart_regs *uart0 = (uart_regs*)0x4000C000u
 
 ```  
@@ -90,19 +90,19 @@ With this in place, let's go back to the example in the data sheet at section 12
 
 Disabling the UART device involves clearing the ```UARTEN``` bit - which is the 0th bit - in UARTCTL register. We do this by:  
 
-```
+```c
 uart0->CTL &= 0x00000000u;
 ```  
 
 Now, this very same bit can be set to enable the UART device. In order for us to be able to turn-on/turn-off the device as well as avoid using "magic" numbers, we can define the ```UARTEN``` bit as:
 
-```
+```c
 #define UARTCTL_UARTEN 0x00000001u
 ```  
 
 and disable the UART device like so:
 
-```
+```c
 uart0->CTL &= ~UARTCTL_UARTEN;
 ```  
 
@@ -110,7 +110,7 @@ As you can see, this helps with readbility too, with the later snippet being alm
 
 But does this suffice, as far as disbaling a UART goes? What if the UART was in operation or what if the data register had something that was not sent/read yet? It is best not to make assumptions and handle these cases:  
 
-```C
+```c
 static void uart_disable(void)
 {   
 	/* clear UARTEN in UARTCTL*/
@@ -126,7 +126,7 @@ static void uart_disable(void)
 
 ```uart0->FR & UARTFR_BUSY``` gives us the ```BUSY``` bit in teh flag register ```UARTFR``` and ```UARTLCRH_FEN``` represents the ```FEN``` (FIFO enable) bit in ```UARTLCRH``` which we clear to flush any data in the FIFOs.  
 
-```
+```c
 #define UARTFR_BUSY 0x00000008u
 #define UARTLCRH_FEN 0x00000010u
 ```  
@@ -151,7 +151,7 @@ BRDF == integer(0.7817 * 64 + 0.5) = 50
 
 This can be implemented as a function:  
 
-```C
+```c
 static void uart_set_baudrate(uint32_t baudrate)
 {
     uint32_t brdi, brdf, dvsr, remd;
@@ -174,7 +174,7 @@ static void uart_set_baudrate(uint32_t baudrate)
 
 There is one more thing that needs doing to get our UART working - the peripheral clock must be enabled by setting the UART0 (since we're using UART0 device) bits in the ```RCGC1``` register. This is a system control SFR meant specifically for clock control - a module we'll deal with in a later chapter. For now, let's simply set the ```UART0``` bit of the register, like so:  
 
-```C
+```c
 static void set_clk_uart0(void)
 {
     uint32_t *pRCGC1 = (uint32_t*)0x400FE104u;
@@ -186,7 +186,7 @@ static void set_clk_uart0(void)
 
 And finally, we set the packet format and disable FIFOs in the ```UARTLCRH``` register as follows:  
 
-```C
+```c
 static void uart_set_example_line_ctrls(void)
 {
     uart0->LCRH = UARTLCRH_EXAMPLE;
@@ -203,7 +203,7 @@ uart0->CTL &= ~UARTCTL_UARTEN;
 
 Sending data is fairly simple, all we have to do is write data as a byte into the ```UARTDR``` register when the ```UARTDR``` isn't full   . The status of the ```UARTDR``` for sending data is available in the ```TXFF``` bit in the ```UARTFR```. If the bit is set, it indicates that UART Transmit FIFO (in our case the data register) is full - hence data cannot be sent.  
 
-```C
+```c
 void uart_tx_byte(uint8_t byte)
 {
     /* if tx register is full, wait until it isn't */
@@ -215,7 +215,7 @@ void uart_tx_byte(uint8_t byte)
 
 Recieving data, requires us to check if the received data is available in the ```UARTDR```. This is achieved by checking if the ```RXFE``` bit - UART Receive FIFO Empty -is clear (in the ```UARTFR```). If it is clear, then there is received data to be read in the ```UARTDR```.
 
-```C
+```c
 uart_err uart_rx_byte(uint8_t* byte)
 {
     /* if the rx register is empty, reply 

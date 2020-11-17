@@ -246,11 +246,13 @@ uart_err uart_rx_byte(uint8_t* byte)
 
 Notice how we only read the last 8-bits of the ```UARTDR``` as the recieved data. This is because the first 4-bits of the register hold error information. This error information specific to recieve data is available in the ```UARTRSR/UARTECR``` register - which we read and clear and return an error enum - to indicate recieve error.  
 
+And to put this all together, let's stick ```uart_init(115200)``` in the ```main()``` function to set up our uart to be operational.  
+
+Now, we'll need a way to use this UART driver to communicate with the console. The simplest thing to do is write a pair of functions to write to and read from the UART device. You can try that - maybe even write code to be able to read and write integers - who knows, even a ```printf``` and ```scanf``` implementation. If you need a starting point, take a look at this [application](https://github.com/varun-venkatesh/bare-metal-arm/blob/master/src/chapter2/serial_print.c) that utilises the UART driver. As usual, modify the Makefile to include the new source files we've created, build the project and run the binary on QEMU. You'll see that you can now see the text you sent to the uart printed on the console and also any text you type on the console appears coutesy the uart reading from console and writing back to it.  
+
 This is all we need to operate the UART.  
 
 You may have seen that we're essentially polling to see if we have received data on the UART in ```uart_rx_byte``` by checking the ```RXFE``` bit in ```UARTFR```. Although this works well as an example, it's not the most efficient way to operate a UART or any device for that matter. Polling is time/resource consuming and we'll do well to process incoming data as and when we receive it. This forms the subject of our next chapter on interrupt handling.  
-
-Now, we'll need a way to use this UART driver to communicate with the console. The simplest thing to do is write a pair of functions to write to and read from the UART device. You can try that - maybe even write code to be abel to read and write integers - who knows, even a ```printf``` and ```scanf``` implementation. If you need a starting point, take a look at this [application](https://github.com/varun-venkatesh/bare-metal-arm/blob/master/src/chapter2/serial_print.c) that utilises the UART driver.  
 
 ### References:
 

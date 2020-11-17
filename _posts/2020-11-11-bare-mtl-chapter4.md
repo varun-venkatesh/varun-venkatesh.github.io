@@ -322,8 +322,8 @@ Other than driving peripherals that need a clocking/synchronizing signal, we nee
 
 Like any other module/peripheral, programming SysTick involves manipulating it's SFRs:
 
-**STCTRL**: SysTick Control and Status is a control and status counter to configure its clock, enable the counter, enable the SysTick interrupt, and determine counter status.
-**STRELOAD**: SysTick Reload Value holds the reload value for the counter, used to provide the counter's wrap value.
+**STCTRL**: SysTick Control and Status is a control and status counter to configure its clock, enable the counter, enable the SysTick interrupt, and determine counter status.  
+**STRELOAD**: SysTick Reload Value holds the reload value for the counter, used to provide the counter's wrap value.  
 **STCURRENT**: SysTick Current Value holds current value of the counter.  
 
 On enabling the the SysTick via ```STCTRL``` the timer counts down on each clock pulse (the clock can be configured to the SysClk or an external clock source) from the value present in ```STRELOAD``` to zero - at which point the SysTick Exception is generated. Following this, the counter wraps around to the ```STRELOAD``` - rinse and repeat.  Clearing ```STRELOAD``` puts a stop to the counter on the next wrap around. ```STCURRENT``` can be used to monitor the current value of count - writing to this clears it and also the ```COUNT``` bit in ```STCTRL```. All of this and more is available in the register descriptions.  

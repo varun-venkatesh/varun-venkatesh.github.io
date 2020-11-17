@@ -148,6 +148,7 @@ void nvic_irq_disable(uint32_t vector_num)
 Notice how in both enable and disable functions, we derive the interrupt number by subtracting the vector number of the first interrupt for that register (```IRQ_GPIOA/IRQ_ADC0_SEQ2```) from the vector number of the inetrrupt of interest.  
 
 The final step is to define a handler for this interrupt, where we process the interrupt. Remember our vector table from [Chapter 2](https://varun-venkatesh.github.io/2020/09/28/bare-mtl-chapter2.html) where we defined the first 15 execptions. Let's expand that table to include the remaining interrupts supported by our hardware - as seen in table 2-9. We can go ahead and define the unused interrupts (so far), like we did the unused execptions - via a call to the hang function. Let's then place ```uart0_irq_handler``` in the vector table at the location corresponding to it's vector number.  
+
 We'll define this function in ```uart_drv.c``` since it involves handling a uart interrupt. Let's also provide a symbol for reference in our startup file (where lies the vector table) - to keep the linker happy. What do we do in terms of handling? For starters, let's try and print some text everytime the interrupt is triggered - which should be everytime our UART/serial device recieves data. If you recall, QEMU redirects all console inputs/outputs to the serial device - which means, anytime we type something in the QEMU console, we should have our UART recieving data and the interrupt being triggered. Our simplest interrupt handler will look like this.  
 
 ```C
@@ -214,7 +215,37 @@ void uart0_irq_handler(void)
 
 All we've added is a check to see if the triggered interrupt is the UART RX interrupt and then copy the first 8-bits of the ```UARTDR``` into the placeholder ```char``` variable. If it represents a carriage return, we transmit a next line ```\n```, otherwise we simply transmit the character. A more thourough handler would handle non-printable control characters like backspace, delete, the up/down/left/right arrows etc. This can be your assignment, perhaps!  
 
-Now, if you try this and type on the qemu console, you will see what you type - something you couldn't do before!  
+Before we proceed, let's add  ```nvic_irq_enable(IRQ_UART0)``` in our ```main()``` function to enable the ```UART0``` interrupt. Since we're on the subject of interrupts, it is wise to keep all interrupts disabled during initialization and enable them at the end of our initialization routine - ```main()``` in this case. This disable/enable can be achieved by changing the processor state to disable/enabel all inetrrupts - using the cps instruction - [refer](https://developer.arm.com/documentation/dui0552/a/the-cortex-m3-instruction-set/miscellaneous-instructions/cps).  Let's define these in a header file and then stick them in ```main()```.  
+
+```C
+/* To enable all interrupts with programmable priority.
+ * Refer: Refer http://www.ti.com/lit/ds/symlink/lm3s6965.pdf
+ * Table 2-13 and Section 2-3-4
+ */
+static inline void irq_master_enable(void)
+{
+    /* https://gcc.gnu.org/onlinedocs/gcc/Extended-Asm.html
+     * asm statements that have no output operands, including asm goto statements, 
+     * are implicitly volatile.asm statements that have no output operands, 
+     * including asm goto statements, are implicitly volatile.
+     * Included the __volatile__ qualifier anyway to put in this note.
+     */
+    __asm__ __volatile__ ("cpsie i");
+}
+
+/* To disable all interrupts with programmable priority.
+ * Refer: Refer http://www.ti.com/lit/ds/symlink/lm3s6965.pdf
+ * Table 2-13 and Section 2-3-4
+ */
+static inline void irq_master_disable(void)
+{
+    __asm__ __volatile__ ("cpsid i");
+}
+```  
+
+Notice how we're only disabling and enabling interrupts and not execptions. We can disable/enable all exeptions too, using the ```cpsid f``` and ```cpsie f``` instructions (except teh NMI which cnanot be disabled). It is not recommended because these exceptions represent system faults that we will need to handle/debug (although presently, we only hang if these are ever encountered).  
+
+Now, if you try this (build and run) and type on the qemu console, you will see what you type - something you couldn't do before!  
 
 ### References  
 

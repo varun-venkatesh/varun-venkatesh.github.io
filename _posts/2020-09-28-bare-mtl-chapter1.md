@@ -269,7 +269,7 @@ SECTIONS
 }
 ```
 
-Without going into too much detail, the linker script here, aptly named ```linker_script.ld```, sets up the various sections, thier contents and thier location within memory. ```MEMORY``` command describes the location and size of blocks of memory in the target - in accordance with teh memory map (as seen in the data sheet). ```SECTIONS``` command describes how the various sections are to be placed in memory.  
+Without going into too much detail, the linker script here, aptly named ```linker_script.ld```, sets up the various sections, thier contents and thier location within memory. ```MEMORY``` command describes the location and size of blocks of memory in the target - in accordance with the memory map (as seen in the data sheet). ```SECTIONS``` command describes how the various sections are to be placed in memory.  
 
 We start the ```SECTIONS``` with ```. = 0x00000000;```. ```.``` represents the location counter within ```SECTIONS``` and is incremented according to what follows - although it is initialized to zero at the start of ```SECTIONS```, we've placed it there anyway. Next, ```.text``` specifies what goes into the ```.text``` section of the executable - in this case, the ```.text``` section of ```hello.o```. If we have multiple object files with sections that need to reside in the ```.text``` section of the executable, we preceed the ```(.<section_name>)``` with a ```*``` - which acts as a wildcard.  
 
@@ -488,7 +488,7 @@ void main(void)
 }
 ```  
 
-We'll be using the ```UART``` serial interface to write to teh console. If you check table 2-8 in the data sheet, you'll see that this interface is mapped to address ```0x4000C000```. Since this is QEMU and not real hardware, we can simply write to this address and have our data dispalyed on the console (although on real hardware, the UART will have to be configured suitable before it can be used. We'll be dealing with this in the next chapter).  
+We'll be using the ```UART``` serial interface to write to the console. If you check table 2-8 in the data sheet, you'll see that this interface is mapped to address ```0x4000C000```. Since this is QEMU and not real hardware, we can simply write to this address and have our data dispalyed on the console (although on real hardware, the UART will have to be configured suitable before it can be used. We'll be dealing with this in the next chapter).  
 
 We could've written to serial within main, but we've chosen to call a function as this would exercise stack usage (saving arguments and return address, unwinding the stack on return) - which is a good way to determine if our startup code works as expected. Let's save this file as ```serial_print.c```.  
 
@@ -552,15 +552,3 @@ The one I found quite useful and elaborate is this [tutorial](http://bravegnu.or
 Another great resource for assembler directives, linker scripts, make etc is [this](https://sourceware.org/binutils/). It serves well as a reference/lookup.  
 
 Like I mentioned already, whenever a question pops in your head, look it up - seek, and ye shall find.
-
-
-
-
-
-
-
-
-
-
-
-

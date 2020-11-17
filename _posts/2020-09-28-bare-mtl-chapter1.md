@@ -459,7 +459,7 @@ We save this file as ```startup.s```.
 
 With our startup code setting up the C runtime environment, we can now program in C. Let's see what a simple Hello, World program looks like.  
 
-```C
+```c
 #include <stdint.h>
 
 /* We'll be using the serial interface to print on the console (qemu)

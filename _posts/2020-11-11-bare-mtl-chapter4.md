@@ -10,7 +10,7 @@ The actual hardware comes with a variety of peripherals and interfaces to potent
 
 Time keeping on any hardware is achieved with the use of clock and timer hardware available on boad. Programming these bits of hardware and being able to keep time accurately will be the subject of this chapter. If you recall the time when we started programming the uart driver, we had assumed that the system clock frequency was about 12.5 MHz by default and we had enabled the clock signal to drive the uart peripheral. It's now time to throw the assumptions out the window and actually set up a system clock and timer driver. We'll then use these to build a simple scheduler.  
 
-### The clock is ticking  
+### I'm a little cuckoo clock...
 
 The hardware lm3s6965 comes with a set of clock sources (crystal - also called xtal - oscillators) on board that can be controlled via SFRs (what else?!). These clocks are similar in operation to your mum and dad's quartz wristwatches (yes, in the age of the smartwatch, quartz stays to mum and dad) and are part of the system control. More details on the various clock sources and their properties can be found in section 5.2.4 of the data sheet. Utlimately, the internal system clock (SysClk) which drives the various peripherals and aides in keeping time is derived from one of these clocks on board. Figure 5-5 on the data sheet gives us a good look at how the various clock sources are arranged and their relation with the system clock.  
 
@@ -18,8 +18,9 @@ Controlling the clock and getting a stable accurate system clock frequency is ke
 
 The source code for this section is available [here](https://github.com/varun-venkatesh/bare-metal-arm/tree/master/src/chapter4).
 
-[//]: # (This may be the most platform independent comment)
-[//]: # (TODO: Describe the registers and setup the premise for programming them.)
+[//]: # (This may be the most platform independent comment)  
+
+The Run-Mode Clock Configuration (RCC) and Run-Mode Clock Configuration 2 (RCC2) registers provide control for the system clock. The configurations include picking an oscillator from the ones available and the crystal used with it - should the main oscillator be selected (remember, internal oscillators are on-board and don't need any extrnal crystal source - this makes them less complicated and also less accurate). It also allows for the use of a PLL (Pase Locked Loop) which esentially multiplies the clock signal from the selected oscillator source putting out a signal at 400 MHz. The PLL output is subject to what is called a system divider to get a frequency of the users choosing (prior to this, the PLL frequency is divided by 2 == 200 MHz). Additional configurations include - clock gating, clock settings for the PWM module.  
 
 We start off by mirroring the System Control Register Map using a structure like we did with ```UART``` and ```NVIC```. Programming the system control registers to configure a PLL based clock system of a ceratin frequency involves the use of the ```RCC``` register or the ```RCC2``` register if we need a larger assortment of clock configuration options. The configuration function looks like this.  
 
@@ -143,3 +144,165 @@ Wait... how do we measure these delays if we don't have any known clock on board
 
 Next, we clear the ```XTAL``` and ```OSCSRC``` fields in our local copies and set them to select the crystal and oscillator source required by the configs passed. We then clear the ```PWRDWN``` field to turn the PLL on. To set the resulting clock signal to the desired frequency, we'll need to apply the system divider ```SYSDIV``` in the config to the ```RCC\RCC2``` registers appropriately. Before this, we also clear the PLL lock interrupt - we do this to poll for a PLL lock so we can enable it. Once the ```SYSDIV``` has been written, we introduce a short delay just to ensure it is applied. Finally, we poll for the ```PLLRIS``` bit in the ```RIS``` (Raw Interrupt Status) register - which indicates a PLL lock - which is when we enable the use of PLL by clearing ```BYPASS``` in ```RCC\RCC2```.  
 
+Once we've set the clock to an appropriate frequency, we can go on to use it in our drivers that need some manner of clocking - for instance the UART. If you remember, we assumed that the default SysClk operated at 12.5 MHz. With the clock now set to a frequency of our choosing, we can replace that assumption with the actual SysClk frequency. To get this, we'll need to again look into registers ```RCC\RCC2``` (programmatically, ofcourse) and ascertain the frequency of the SysClk, like so:  
+
+```C
+/* This is function is for finding the system clock frequency.
+ * Helps with setting time-periods/time-outs.
+ * Refer: http://www.ti.com/lit/ds/symlink/lm3s6965.pdf 
+ * Section 5-5 Pages 195-201
+ */
+uint32_t sysctl_getclk(void)
+{
+    uint32_t tmp_rcc, tmp_rcc2, tmp_pllcfg, clk_rt;
+
+    // Read from the config registers RCC/RCC2
+    tmp_rcc = sysctl->RCC;
+    tmp_rcc2 = sysctl->RCC2;
+
+    // determin the oscillator used (and if RCC2 overrides RCC)
+    switch((tmp_rcc2 & SYSCTL_RCC2_USERCC2) ?
+           (tmp_rcc2 & SYSCTL_RCC2_OSCSRC2_MASK) :
+           (tmp_rcc & SYSCTL_RCC_OSCSRC_MASK))
+    {
+        case SYSCTL_RCC_OSCSRC_MOSC:
+        {
+            clk_rt = xtal_freq[(tmp_rcc & SYSCTL_RCC_XTAL_MASK) >> SYSCTL_RCC_XTAL_SHIFT];
+            break;
+        }
+
+        case SYSCTL_RCC_OSCSRC_IOSC:
+        {
+            clk_rt = FREQ_12MHZ;
+            break;
+        }
+        case SYSCTL_RCC_OSCSRC_IOSC_DIV4:
+        {
+            clk_rt = (FREQ_12MHZ)/4;
+            break;
+        }
+        case SYSCTL_RCC_OSCSRC_30KHZ:
+        {
+            clk_rt = FREQ_30KHZ;
+            break;
+        }
+        case SYSCTL_RCC2_OSCSRC2_32KHZ:
+        {
+            clk_rt = FREQ_32KHZ;
+            break;
+        }
+
+    }
+
+    // check if BYPASS is off, if it is, find the PLL frequency
+    if(((tmp_rcc2 & SYSCTL_RCC2_USERCC2) != 0 && (tmp_rcc2 & SYSCTL_RCC2_BYPASS2) == 0) ||
+       ((tmp_rcc2 & SYSCTL_RCC2_USERCC2) == 0 && (tmp_rcc & SYSCTL_RCC_BYPASS) == 0))
+    {
+        // Read PLLCFG to find the Fvalue and RValue
+        tmp_pllcfg = sysctl->PLLCFG;
+        
+        // Compute PLLFreq = OSCFreq * F / (R + 1)
+        clk_rt = clk_rt * 
+                ((tmp_pllcfg & SYSCTL_PLLCFG_FVAL_MASK) >> SYSCTL_PLLCFG_FVAL_SHIFT) / 
+                (((tmp_pllcfg & SYSCTL_PLLCFG_RVAL_MASK) >> SYSCTL_PLLCFG_RVAL_SHIFT) + 1);
+    }
+
+    /* apply the SYSDIV value to compute the frequency of the system clock.
+     * if BYPASS is OFF, then PLL is ON, which means the PLL frequency computed earlier
+     * must be divided by 2 (Refer:  http://www.ti.com/lit/ds/symlink/lm3s6965.pdf 
+     * Section 5.2.4.2. Apply the appropriate SYSDIV factor - as in Table 5-5 and Table 5-6
+     */
+    if(tmp_rcc & SYSCTL_RCC_USESYSDIV)
+    {
+        if((tmp_rcc2 & SYSCTL_RCC2_USERCC2))
+        {
+            if((tmp_rcc2 & SYSCTL_RCC2_BYPASS2) == 0)
+            {
+                clk_rt = clk_rt/2;
+            }
+
+            clk_rt = clk_rt / 
+                     (((tmp_rcc2 & SYSCTL_RCC2_SYSDIV2_MASK) >> 
+                      SYSCTL_RCC2_SYSDIV2_SHIFT) + 1);
+        }
+        else 
+        {
+            if((tmp_rcc & SYSCTL_RCC_BYPASS) == 0)
+            {
+                clk_rt = clk_rt/2;
+            }
+
+            clk_rt = clk_rt / 
+                     (((tmp_rcc & SYSCTL_RCC_SYSDIV_MASK) >> 
+                      SYSCTL_RCC_SYSDIV_SHIFT) + 1);
+        }
+    }
+
+    return (clk_rt);
+}
+```  
+
+To cut this long story short (as this can be drawn from the register description and the clock control operation), what we do is to firstly determine the clock source in use (and also whether ```RCC``` or ```RCC2``` is where the source is selected - note that for source selection and system divider values, ```RCC2``` overrides ```RCC```). If the clock source happens to be the main oscillator, the clock-source frequency can be obtained using the ```XTAL``` field. For all other sources, the clock-source frequency comes pre-determined. We then check if PLL is enabled via ```BYPASS``` use the ```PLLCFG``` register to translate the clock-source frequency obtained into the corresponding PLL frequency (See  - although PLL generates a clock signal of frequency 400 MHz, it can vary around that value depending on teh clock-source frequency (See Table 22-10). Finally, we check ```USESYSDIV``` and apply the system divider ```SYSDIV``` to the clock frequency we have so far (again, if PLL is enabled, we divide the frequency by 2 before applying ```SYSDIV```).  
+
+We can now use this method to derive our IBRD and FBRD values for the uart baudrate.  
+
+```C
+/* Set the uart baudrate of the uart device*/
+static void uart_set_baudrate(uint32_t baudrate)
+{
+    uint32_t sysclk, brdi, brdf, dvsr, remd;
+
+    /* Refer http://www.ti.com/lit/ds/symlink/lm3s6965.pdf 12.3.2 */
+    sysclk = sysctl_getclk();
+
+    dvsr = (baudrate * 16u);
+
+    /* integer part of the baud rate */
+    brdi = sysclk/dvsr;
+
+    /* fractional part of the baudrate */
+    remd = sysclk - dvsr * brdi;
+    brdf = ((remd << 6u) + (dvsr >> 1))/dvsr;
+
+    uart0->IBRD = (uint16_t)(brdi & 0xffffu);
+    uart0->FBRD = (uint8_t)(brdf & 0x3ffu);
+}
+```  
+
+Notice how we replaced the hard-coded macro ```UART_DFLT_SYSCLK``` with the clock-frequency obtained using ```sysctl_getclk()```.  
+There's one last thing we can do with the system control register i.e. enable clocking for the ```UART0``` (or any of the peripherals that need clocking). This is done with the help of the Clock Gating Control Registers. There are 6 of these registers available to us - ``` RCGC1, SCGC1, DCGC1, RCGC2, SCGC2, DCGC2``` - each one controlling the clock gating in the various modes of operation. Since we won't be dealing with the Sleep/Deep-Sleep modes here, we'll look at ```RCGC1/RCGC2```. From thier descriptions, it appears that ```RCGC1``` controls clock gating for UARTs. Let's enable this for our ```UART0``` and use it in place of the hacky ```set_clk_uart0()``` from chapter 3.  
+
+```C
+
+/* This function helps us enable clocking for a peripheral whose 
+ * base address is passed as a parameter. This is done by appropriatley configuring
+ * RCGC1. Refer: http://www.ti.com/lit/ds/symlink/lm3s6965.pdf Section 5-5 Pages 220-222
+ */
+void sysctl_periph_clk_enable(uint32_t periph)
+{
+    switch(periph)
+    {
+        case UART0_BASE:
+            sysctl->RCGC1 |= SYSCTL_RCGC1_UART0;
+            break;
+        case UART1_BASE:
+            sysctl->RCGC1 |= SYSCTL_RCGC1_UART1;
+            break;
+        case UART2_BASE:
+            sysctl->RCGC1 |= SYSCTL_RCGC1_UART2;
+            break;
+        default:
+            break;
+    }
+
+}
+
+```  
+
+We can then call this in ```uart_init()``` in place of ```set_clk_uart0()```.  
+
+### ... Tick tock, tick tock...  
+
+Other than driving peripherals that need a clocking/synchronizing signal, we need clock to measure time and say trigger actions on the expiry of a pre-determined interval. This is where timers come into play. As you may have read in the data sheet, the LM3S6965 provides among other things a System timer (SysTick) described in Section 3.1. It operates by counting down from a value (max 24-bits == 16,777,215) at the end of which vector number 15 is triggered - where we can handle the expiry of the timer to perform some useful action. Some of the uses are detailed in the section. We'll use it to build a simple scheduler in the next chapter.  
+
+Like any other module/peripheral, programming SysTick involves manipulating it's SFRs. 

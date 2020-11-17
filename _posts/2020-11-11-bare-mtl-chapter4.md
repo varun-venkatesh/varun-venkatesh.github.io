@@ -305,4 +305,85 @@ We can then call this in ```uart_init()``` in place of ```set_clk_uart0()```.
 
 Other than driving peripherals that need a clocking/synchronizing signal, we need clock to measure time and say trigger actions on the expiry of a pre-determined interval. This is where timers come into play. As you may have read in the data sheet, the LM3S6965 provides among other things a System timer (SysTick) described in Section 3.1. It operates by counting down from a value (max 24-bits == 16,777,215) at the end of which vector number 15 is triggered - where we can handle the expiry of the timer to perform some useful action. Some of the uses are detailed in the section. We'll use it to build a simple scheduler in the next chapter.  
 
-Like any other module/peripheral, programming SysTick involves manipulating it's SFRs. 
+Like any other module/peripheral, programming SysTick involves manipulating it's SFRs:
+
+**STCTRL**: SysTick Control and Status is a control and status counter to configure its clock, enable the counter, enable the SysTick interrupt, and determine counter status.
+**STRELOAD**: SysTick Reload Value holds the reload value for the counter, used to provide the counter's wrap value.
+**STCURRENT**: SysTick Current Value holds current value of the counter.  
+
+On enabling the the SysTick via ```STCTRL``` the timer counts down on each clock pulse (the clock can be configured to the SysClk or an external clock source) from the value present in ```STRELOAD``` to zero - at which point the SysTick Exception is generated. Following this, the counter wraps around to the ```STRELOAD``` - rinse and repeat.  Clearing ```STRELOAD``` puts a stop to the counter on the next wrap around. ```STCURRENT``` can be used to monitor the current value of count - writing to this clears it and also the ```COUNT``` bit in ```STCTRL```. All of this and more is available in the register descriptions.  
+
+Let's go on an program the SysTick. We'll do this in such a way that we can print messages at some pre-determined interval - which is a great way to verify our SysClk and SysTick programming.  
+
+As usual, we start off by creating a structure to hold the SFRs and initialize a member to point to the SySTick base address. We'll define functions to enable/disable SysTick and set the clock source to SysClk. We'll also write fucntions to enable/disable the SysTick interrupt.  
+
+```C
+void systick_enable(void)
+{
+    systick->STCTRL |= STCTRL_CLKSRC | STCTRL_ENABLE;
+}
+
+/* Function to enable the SysTick timer 
+ * by clearing the ENABLE bit and 
+ */
+void systick_disable(void)
+{
+    systick->STCTRL &= ~(STCTRL_ENABLE);
+}
+
+/* Function to enable the SysTick timer interrupt 
+ * by setting the INTEN bit and 
+ */
+void systick_irq_enable(void)
+{
+    systick->STCTRL |= STCTRL_INTEN; 
+}
+
+/* Function to disable the SysTick timer interrupt 
+ * by clearing the INTEN bit and 
+ */
+void systick_irq_disable(void)
+{
+    systick->STCTRL &= ~(STCTRL_INTEN);
+}
+
+```  
+
+Now to the fun part, let's set up ```STRELOAD``` to hold the count. The count can be any 24-bit number which is counted down on every clock pulse, but in order to be useful, it should represent some measure of time (seconds, milliseonds etc). Since we power the SysTIck with SysClk, whose frequency we know, let's find what the count value is for a given time period (number of clock pulses per time period).  
+
+```C
+
+/* Utility function to convert the
+ * the time period in milliseconds to
+ * the timer period based on the system clock frquency
+ */
+static uint32_t systick_millisec_to_timer_period(uint32_t millisec)
+{
+    /* this scheme of dividing the clock frequency by 1000
+     * to calculate cycles per millisec rather than multiply clock frequency
+     * with millisec and divide by 1000 - is to avoid the overflow in the latter case.
+     */
+    uint32_t period = (sysctl_getclk()/1000u) * millisec;
+    return period;
+
+}
+
+/* Function to use the time period in milliseconds provided 
+ * as the SysTick countdown value -by first converting the
+ * period in milliseconds to the timer period.
+ */
+void systick_set_period_ms(uint32_t millisec)
+{
+    /* TODO: check to ensure that the period is 
+     * no greater than 2^24 (- uses 24 bits)
+     */
+    uint32_t count = systick_millisec_to_timer_period(millisec);
+    systick->STRELOAD = count;
+}
+
+```  
+
+Now, onto changes in our startup and init to accomodate SysTick.  
+
+
+

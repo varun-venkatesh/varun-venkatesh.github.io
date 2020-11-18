@@ -5,6 +5,12 @@ body {
     margin: 60px auto;
     width: 70%;
 }
+
+div {
+  background-color: #f1f1f1;
+  border-radius: 6px;
+}
+
 nav ul, footer ul {
     font-family: 'Exo';
     padding: 0px;

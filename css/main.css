@@ -49,8 +49,9 @@ ul.posts li {
 
 code {
   padding: .2em .4em;
-  font-family: monospace;
+  font-family: 'Exo';
   font-size: 85%;
   background-color: #f1f1f1;
   border-radius: 6px;
+  overflow: auto;
 }

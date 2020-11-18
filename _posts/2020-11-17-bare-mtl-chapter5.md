@@ -4,7 +4,7 @@ title: "Chapter Five: ... Walk and chew gum at the same time"
 date: 2020-11-17
 ---  
 
-Apart from drivign the uart and demonstarting to us that we've configured a usable clock and timer, the timer constructed can also be used to set up a simple scheduler.
+Apart from driving the uart and demonstarting to us that we've configured a usable clock and timer, the timer constructed can also be used to set up a simple ```scheduler```.
 
 ### The basics  
 

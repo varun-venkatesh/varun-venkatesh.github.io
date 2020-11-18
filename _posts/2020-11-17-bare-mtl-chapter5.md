@@ -4,10 +4,12 @@ title: "Chapter Five: ... Walk and chew gum at the same time"
 date: 2020-11-17
 ---  
 
-Apart from drivign the uart and demonstarting to us that we've configured a usable clock and timer, the timer constructed can also be used to set up a simple scheduler - in an attempt to run multiple tasks on our hardware.  
-
-Most systems today have schedulers of varying complexity helping run multiple tasks/processes/threads to utilize system resources effectively. It forms part of the operating system and is a great point to start understanding the workings or even "rolling" one of your own.  
+Apart from drivign the uart and demonstarting to us that we've configured a usable clock and timer, the timer constructed can also be used to set up a simple scheduler.
 
 ### The basics  
 
+What is the need for a scheduler?  
+A scheduler is a program tha allows us the ability to run **multiple quasi-independent** programs on our system - in a seemingly simultaneous manner. Now, that's a mouthful!  
+
+Why would we need to run these **multiple quasi-independent** programs at the same time? Can't we have one single program do everthing we need - like what we have now?  
 

@@ -8,7 +8,7 @@ Our system is now running software - every bit of which has been written by us -
 
 The actual hardware comes with a variety of peripherals and interfaces to potentail peripherals that can be controlled by our processor onboard. Things like GPIO, I2C, SSI, SPI, PWM, ADC, ethernet etc. In order to use these interfaces and peripherals or even run useful applications, one of the prerequisites happens to be the ability to keep/measure time (not to mention the fact that this is something that is achievable with the use of an emulator).  
 
-Time keeping on any hardware is achieved with the use of clock and timer hardware available on boad. Programming these bits of hardware and being able to keep time accurately will be the subject of this chapter. If you recall the time when we started programming the uart driver, we had assumed that the system clock frequency was about 12.5 MHz by default and we had enabled the clock signal to drive the uart peripheral. It's now time to throw the assumptions out the window and actually set up a system clock and timer driver. We'll then use these to build a simple scheduler.  
+Time keeping on any hardware is achieved with the use of clock and timer hardware available on boad. Programming these bits of hardware and being able to keep time accurately will be the subject of this chapter. If you recall the time when we started programming the uart driver, we had assumed that the system clock frequency was about 12.5 MHz by default and we had enabled the clock signal to drive the uart peripheral. It's now time to throw the assumptions out the window and actually set up a system clock and timer driver.  
 
 ### I'm a little cuckoo clock...
 
@@ -328,7 +328,7 @@ The variables ```clk_cfg1, clk_cfg2``` represent the configuration required to o
 
 ### ... Tick tock, tick tock...  
 
-Other than driving peripherals that need a clocking/synchronizing signal, we need clock to measure time and say trigger actions on the expiry of a pre-determined interval. This is where timers come into play. As you may have read in the data sheet, the LM3S6965 provides among other things a System timer (SysTick) described in Section 3.1. It operates by counting down from a value (max 24-bits == 16,777,215) at the end of which vector number 15 is triggered - where we can handle the expiry of the timer to perform some useful action. Some of the uses are detailed in the section. We'll use it to build a simple scheduler in the next chapter.  
+Other than driving peripherals that need a clocking/synchronizing signal, we need clock to measure time and say trigger actions on the expiry of a pre-determined interval. This is where timers come into play. As you may have read in the data sheet, the LM3S6965 provides among other things a System timer (SysTick) described in Section 3.1. It operates by counting down from a value (max 24-bits == 16,777,215) at the end of which vector number 15 is triggered - where we can handle the expiry of the timer to perform some useful action. Some of the uses are detailed in the section.  
 
 Like any other module/peripheral, programming SysTick involves manipulating it's SFRs:
 

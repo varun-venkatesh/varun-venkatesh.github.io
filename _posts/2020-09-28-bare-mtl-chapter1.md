@@ -10,7 +10,7 @@ Now, that you have your setup ready, let's get coding. Remember, this is a bare-
 
 We know that the hardware includes an ARM Cortex-M3 microcontroller, so we should be able to use ARM assembly instructions to get something done for us, say, find the sum of two numbers. That sounds like a good starting point.
 
-```asm
+```
 .syntax unified
 .thumb
 
@@ -38,7 +38,7 @@ Let's save this file as ```hello.s``` as we'll build upon this file as we journe
 You can see how we use the load instruction to load numbers into the cpu registers, add them and save the result into another cpu register:
 
 
-```asm
+```
 ldr r0, =num1   /* r0 == &num1 */
 ldr r1, [r0]    /* r1 == num1 */
 ldr r0, =num2   /* r0 == &num2 */
@@ -119,7 +119,7 @@ In another terminal window:
 
 to connect to the telnet server hosted by the qemu machine, you'll see:
 
-```console
+```
 $ telnet localhost 1234
 Trying 127.0.0.1...
 Connected to localhost.
@@ -145,20 +145,21 @@ Take a look at ```R13=00005000 R15=00000012``` - we've seen earlier that ``` R13
 
 Earlier, we mentioned that on reset, the value at address ```0x00000000``` is copied onto the stack pointer ```R13``` and the value at address ```0x00000004``` is copied onto the program counter ```R15``` which is where execution will begin. We've seen the first statement in action. To see how execution begins at the address copied from ```0x00000004```, run the binary on QEMU but halt execution:
 
-```qemu5.1-system-arm -s -S -M lm3s6965evb -kernel hello.bin -nographic -serial /dev/null```  
+```qemu-system-arm -s -S -M lm3s6965evb -kernel hello.bin -gdb tcp::5678 -nographic -serial /dev/null```  
 **-S** - freeze (or stop) execution at startup.  
 **-s** - used instead of -gdb tcp::1234 or running gdbserver in the qemu prompt.  
 **-serial** - redirect serial output to a char device - in this case /dev/null.  
+**-gdb** - sets up the gdbserver on the localhost (IP: 127.0.0.1) on **tcp::5678** - tcp port 5678
 
 open up another terminal and run:
 
 ```arm-none-eabi-gdb hello.elf```  
 
-connect to the gdbserver on ```localhost:1234```  
+connect to the gdbserver on ```localhost:5678```  
 
-```console
-(gdb)target remote localhost:1234
-Remote debugging using localhost:1234
+```
+(gdb)target remote localhost:5678
+Remote debugging using localhost:5678
 start () at hello.s:10
 10	        ldr r0, num1
 (gdb) info registers
@@ -211,7 +212,7 @@ Now that we know where each section of the program will reside, we'll need a way
 
 Let's change ```hello.s``` a bit and save the result of the sum of two numbers in memory. We'll need a global variable to hold this result and the space for this can be reserved using the ```.space``` assembler directive.  
 
-```gas
+```
 .syntax unified
 .thumb
 
@@ -277,7 +278,7 @@ We see again ```.``` being assigned to ```ALIGN(4)```, what this does is align t
 
 Variables can be assigned to ```.``` and they hold the address of the location counter at the point where they are initialised - like ```_sram_edata```. What do we make of ```> SRAM AT > FLASH```? The ```AT``` command is used to specify the load address of a section - the address where the section is located in the executable. So, the ```.data``` will reside in the ```SRAM``` region with it's load address in ```FLASH```. ```_flash_sdata``` is initailised with ```LOADADDR(.data)```  - which returns the absolute load address of the named section - ```.data```. Since we have the memory regions supported, we can calculate the highest memory address in the on-chip SRAM, which can be used to initialize the stack pointer at the start of the program - ```_sram_stacktop```. These variables are available for us to use in our program. With this in place, here is the new ```hello.s```  
 
-```gas
+```
 .syntax unified
 .thumb
 
@@ -339,7 +340,7 @@ data_loop:
 
 What we're doing here is copying the data section from the executable in the flash - beginning at ```_flash_sdata``` to the RAM beginning at ```_sram_sdata```. Following this we add the numbers and save the result in a global variable. Let's build ```hello.bin``` and along the way list the symbols in the elf executable:
 
-```console
+```
  arm-none-eabi-nm hello.elf
 0000001e t add_nums
 00000012 t data_loop
@@ -358,7 +359,7 @@ What we're doing here is copying the data section from the executable in the fla
 
 We see how the globals are now located in within the SRAM space ```0x00000000 to 0x20000000```. Notice how ```_sram_stacktop``` is at the highest SRAM address plus one. Now run this binary on our machine and examine the registers and memory:
 
-```console
+```
 (qemu) info registers
 R00=20000004 R01=00000005 R02=00000006 R03=0000000b
 R04=20000008 R05=00000000 R06=00000000 R07=00000000
@@ -376,7 +377,7 @@ The numbers and their sum are available in the SRAM beginning at ```0x20000000``
 
 Let's go back ot the data sheet and look at table 2-8 which lists the exception (or interrupt types) and thier vector addresses. Vector addresses refere to addresses in the memory map where the interrupt service routines are to be located. The table suggests that vector addresses begin at ```0x00000000```  with the last vector located at address ```0x000000EC```. This means that the first ```0x000000F0``` == 240 bytes should represent calls to interrupt service routines (handlers). With this in mind, we can construct the C-runtime or startup code for the hardware that will look like this:  
 
-```nasm
+```
 .syntax unified
 .thumb
 
@@ -535,8 +536,8 @@ The ```.vectors``` section is subject to the ```KEEP``` command which instructs 
 
 The manner of building the executable is the same, except the new file ```serial_print.c``` has to be compiled and assembled without linking it - using the appropriate options. Then, when linking to generate the ELF file, use the object files ```startup.o``` and ```serial_print.o``` as inputs. Let's build an elf called ```hello.elf``` and then generate a raw binary ```hello.bin``` from the same. Let's then run it on QEMU:
 
-```console
-qemu5.1-system-arm -M lm3s6965evb -kernel hello.bin -nographic -monitor telnet:127.0.0.1:1234,server,nowait
+```
+qemu-system-arm -M lm3s6965evb -kernel hello.bin -nographic -monitor telnet:127.0.0.1:1234,server,nowait
 Hello, World
 ```  
 

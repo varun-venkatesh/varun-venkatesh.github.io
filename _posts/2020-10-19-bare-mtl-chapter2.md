@@ -252,7 +252,7 @@ Now, we'll need a way to use this UART driver to communicate with the console. T
 
 This is all we need to operate the UART.  
 
-You may have seen that we're essentially polling to see if we have received data on the UART in ```uart_rx_byte``` by checking the ```RXFE``` bit in ```UARTFR```. Although this works well as an example, it's not the most efficient way to operate a UART or any device for that matter. Polling is time/resource consuming and we'll do well to process incoming data as and when we receive it. This forms the subject of our next chapter on interrupt handling.  
+You may have seen that we're essentially polling to see if we have received data on the UART in ```uart_rx_byte``` by checking the ```RXFE``` bit in ```UARTFR```. Although this works well as an example, it's not the most efficient way to operate a UART or any device for that matter. Polling is time/resource consuming and we'll do well to process incoming data as and when we receive it. This forms the subject of our [next chapter](https://varun-venkatesh.github.io/2020/10/29/bare-mtl-chapter3.html) on interrupt handling.  
 
 ### References:
 

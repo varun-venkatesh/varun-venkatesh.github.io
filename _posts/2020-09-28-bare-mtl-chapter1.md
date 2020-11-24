@@ -544,7 +544,7 @@ Hello, World
 So, there we have it. We've built a C runtime environment and used it to build/execute our first C program on a bare-metal system.  
 You can refer to the code in assembly [here](https://github.com/varun-venkatesh/bare-metal-arm/tree/master/src/chapter1/startup_asm) or the same in C (yes, all of it including the C runtime code written in C!) [here](https://github.com/varun-venkatesh/bare-metal-arm/tree/master/src/chapter1/startup_c). I've used makefiles to assist with building code and executing it - which I hope you'll find useful.  
 
-In this next chapter, we'll look at how we can program the UART/serial hardware to read/write data - as an input/output device. We'll do this in C language, of course.  
+In this [next chapter](https://varun-venkatesh.github.io/2020/10/19/bare-mtl-chapter2.html), we'll look at how we can program the UART/serial hardware to read/write data - as an input/output device. We'll do this in C language, of course.  
 
 ### References:
 There are some really great references out there that go in depth as far as the compilation/assembly/linking/loading aspects go.  

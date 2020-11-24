@@ -248,6 +248,10 @@ Notice how we're only disabling and enabling interrupts and not execptions. We c
 
 Now, if you try this (build and run) and type on the qemu console, you will see what you type - something you couldn't do before!  
 
+Have you noticed how in the last couple of chapters, we've derived the baud-rate based on an assumption that the system clock on board operates at 12 MHz? Where did we get this from? How are we so certain? And can we change this at all?  
+
+In the [next chapter](https://varun-venkatesh.github.io/2020/11/11/bare-mtl-chapter4.html), we'll explore how to work with our crystals, oscillators and clocks in the all important endeavour of measuring time.
+
 ### References  
 
 As I've stated earlier, the datasheet for LM3S6965 is a good starting point and reference to understand interrupts and NVIC in particular.  

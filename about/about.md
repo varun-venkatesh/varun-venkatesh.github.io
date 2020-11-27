@@ -1,6 +1,8 @@
 ---
-layout: default
-title: Varun Venkatesh
+
+layout: about
+title: About me
+
 ---
 
 varunvenkatesh@live.com  

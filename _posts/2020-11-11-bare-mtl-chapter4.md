@@ -138,7 +138,7 @@ void sysctl_setclk(uint32_t cfg_rcc, uint32_t cfg_rcc2)
 
 ```  
 
-The function is written using the follow along section **5.3 Initialization and Configuration in the data sheet**. 
+The function is written using the follow along section **5.3 Initialization and Configuration** in the data sheet. 
 We start off by making local copies of ```RCC\RCC2```, setting ```BYPASS``` and clearing ```USESYS``` in the copies - esentially bypassing PLL and creating a "raw" clock source without any manipulation.We then check if the new configurations require turning on any of the on-board oscillators and do the same. We then set-up delays depending on the clock sources available in the old configuration.  
 
 Wait... how do we measure these delays if we don't have any known clock on board to measure them? Well, in this case, we introduce delays by running a finite loop over a particular count where the processor takes a finite amount of time to process each instruction in the count up/down loop constructed. The delay helps settle the oscillators that have been turned on. And how do we know what delay works? I've chosen a sufficiently large values for delays depening on the oscillators enabled - looks like the manufacturer has also arrived at this via heuristics.  

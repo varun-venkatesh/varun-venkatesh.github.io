@@ -450,4 +450,4 @@ You will see the system time prefixing each console print and be able to verify 
 
 ### References:  
 
-Apart from the data sheet, I found that the ARM's hardware abstarction layer implemenatation [CMSIS](https://github.com/ARM-software/CMSIS_5/tree/develop/Device/ARM/ARMCM3) was pretty useful particularly when finding out what delays were to be used to settle the oscillator and PLL.  
+Apart from the data sheet, I found that the ARM's hardware abstraction layer implemenatation [CMSIS](https://github.com/ARM-software/CMSIS_5/tree/develop/Device/ARM/ARMCM3) was pretty useful particularly when finding out what delays were to be used to settle the oscillator and PLL.  
